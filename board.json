@@ -1,0 +1,735 @@
+{
+  "format": "pspl-proposer/1",
+  "boardId": "pspl-proposer",
+  "app": "1.1.0",
+  "savedAt": "2026-10-23T22:28:32.000Z",
+  "site": "https://mitchellshen.github.io/pspl-proposer/",
+  "repo": "https://github.com/mitchellshen/pspl-proposer",
+  "maintainer": "Mitchell Shen",
+  "checkedOn": "2026-10-23",
+  "checkNote": "Last checked Oct 23, 2026 against NASA's ROSES blog. NASA plans to release ROSES-27 no later than January 2027 and hasn't mentioned ROSES-26. B.7 was corrected on Oct 16: CubeSats were replaced by airborne platforms, and the dates didn't change.",
+  "nasa": {
+    "floor": "2026-10-21",
+    "blogs": [
+      {
+        "id": 442128,
+        "label": "ROSES-25"
+      }
+    ],
+    "reviewed": {
+      "wp:1346715": "2026-10-08T11:26:38",
+      "wp:1385447": "2026-09-22T13:01:18",
+      "wp:1449594": "2026-10-02T10:56:20",
+      "wp:1472664": "2026-10-16T11:52:14",
+      "wp:1479567": "2026-10-08T11:14:30",
+      "wp:1490398": "2026-10-15T16:49:15",
+      "wp:1490563": "2026-10-16T11:50:37",
+      "wp:1497452": "2026-10-20T12:09:15",
+      "wp:1497556": "2026-10-20T15:03:47"
+    }
+  },
+  "opps": {
+    "can5-sservi": {
+      "abbr": "SSERVI",
+      "element": "CAN-5",
+      "title": "Solar System Exploration Research Virtual Institute",
+      "division": "Exploration",
+      "sid": "NNH26ZDA016C",
+      "status": "step2",
+      "statusNote": "Step-1 closed Sep 29, 2026",
+      "due": "2026-12-04",
+      "dueLabel": "Step-2 proposal, Step-1 submitters only",
+      "a": 2,
+      "r": 1,
+      "t": 0,
+      "brings": [
+        "C9",
+        "C10",
+        "C8"
+      ],
+      "bringsText": "Solar wind and ENA science of the lunar near-space environment, dust impacts, and the TOF concept.",
+      "gaps": "Entry only through a team that filed Step-1 by Sep 29; key-personnel changes are restricted (Sec. D.1.4).",
+      "says": "multi-institutional team-based proposals",
+      "action": "Check whether anyone in PSPL is on a Step-1 team; otherwise log it for the next CAN.",
+      "notes": "Dual-anonymous review; the Moon and its near-space environment are in scope.",
+      "sources": [
+        {
+          "label": "NASA: SSERVI CAN-5 final text",
+          "url": "https://science.nasa.gov/?p=1284177"
+        },
+        {
+          "label": "Repost with dates",
+          "url": "https://astrobiology.com/?p=61770"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "next-dali": {
+      "abbr": "DALI",
+      "element": "ROSES-27 (unconfirmed)",
+      "title": "Development and Advancement of Lunar Instrumentation",
+      "division": "Planetary",
+      "sid": "",
+      "status": "expected",
+      "statusNote": "Next edition is ROSES-27, due by Jan 2027; element list not yet published",
+      "due": null,
+      "dueLabel": "TBD",
+      "a": 3,
+      "r": 2,
+      "t": 2,
+      "brings": [
+        "C8",
+        "C1",
+        "C4",
+        "C9"
+      ],
+      "bringsText": "The SWAPI-like TOF (lunar target, goal TRL 6), SWAPI heritage, the facility for TRL testing, and solar wind and ENA science.",
+      "gaps": "Needs a documented TRL 4 entry point (breadboard plus beam tests), lunar environment qualification (G3) and lunar science traceability.",
+      "says": "the technology readiness levels (TRLs) that DALI supports are TRL 4-6",
+      "action": "Reach a documented TRL 4 before DALI is next solicited.",
+      "notes": "Not solicited in ROSES-25; NASA anticipates ROSES-26. DALI aims to make instruments ready for flight calls such as PRISM. Oct 20, 2026: NASA announced ROSES-27 for release no later than Jan 2027 (~50 elements); no ROSES-26 has been released, and NASA has not yet named which elements ROSES-27 will include.",
+      "sources": [
+        {
+          "label": "NASA: ROSES-25 Amendment 51",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/amendment-51-c-6-development-and-advancement-of-lunar-instrumentation-not-solicited-in-roses-25/"
+        },
+        {
+          "label": "SMD Planning List (Jul 21, 2026)",
+          "url": "https://soma.larc.nasa.gov/StandardAO/pdf_files/Planning%20List%20for%20SMD%20Solicitations%2020260721.pdf"
+        },
+        {
+          "label": "NASA: ROSES-27 to be released by Jan 2027 (Oct 20, 2026)",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/nasa-prepares-roses-27-to-advance-american-science-and-leadership-in-space/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "next-hfort": {
+      "abbr": "H-FORT",
+      "element": "ROSES-27 (unconfirmed)",
+      "title": "Heliophysics Flight Opportunities for Research and Technology",
+      "division": "Heliophysics",
+      "sid": "",
+      "status": "expected",
+      "statusNote": "Next edition is ROSES-27, due by Jan 2027; element list not yet published",
+      "due": null,
+      "dueLabel": "TBD",
+      "a": 2,
+      "r": 1,
+      "t": 2,
+      "brings": [
+        "C8",
+        "C4",
+        "C5",
+        "C13"
+      ],
+      "bringsText": "The TOF or a SWAPI-derived sensor as a CubeSat or hosted payload (a ride), with in-house build, calibration and student help.",
+      "gaps": "Needs a bus or platform and mission-operations partner (G2) and flight-project management. Full CubeSat projects have historically cost about $4–8M in LEO.",
+      "says": "platforms that include SmallSats (including CubeSats) and Hosted Rideshare Payloads",
+      "action": "Scope a hosted-payload version of the TOF.",
+      "notes": "Not solicited in ROSES-25. Oct 20, 2026: NASA announced ROSES-27 for release no later than Jan 2027 (~50 elements); no ROSES-26 has been released, and NASA has not yet named which elements ROSES-27 will include.",
+      "sources": [
+        {
+          "label": "NASA: ROSES-24 Amendment 22",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2024/amendment-22-heliophysics-flight-opportunities-in-research-and-technology-final-text-and-due-date"
+        },
+        {
+          "label": "HPD 2022 briefing (cost)",
+          "url": "https://www.nationalacademies.org/cdn/materials/9fba0aea-b3f6-4eae-84e2-385e93b8ecd3"
+        },
+        {
+          "label": "NASA: ROSES-27 to be released by Jan 2027 (Oct 20, 2026)",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/nasa-prepares-roses-27-to-advance-american-science-and-leadership-in-space/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:41:44Z"
+    },
+    "next-hfr": {
+      "abbr": "HFR",
+      "element": "ROSES-25 B.2",
+      "title": "Heliophysics Foundational Research — next round",
+      "division": "Heliophysics",
+      "sid": "NNH25ZDA001N-HFR",
+      "status": "expected",
+      "statusNote": "ROSES-25 round closed Sep 25, 2026",
+      "due": null,
+      "dueLabel": "TBD (two-step in ROSES-25)",
+      "a": 3,
+      "r": 3,
+      "t": 2,
+      "brings": [
+        "C9",
+        "C2"
+      ],
+      "bringsText": "ENAs (IBEX, IMAP-Lo/Hi), interstellar neutral He, pickup ions and the He+ focusing cone, with IMAP data.",
+      "gaps": "ROSES-25 HFR was organized around Strategic Science Teams, so fit depends on next year's topics. One PI proposal per element.",
+      "says": "advance the fundamental physical understanding of the Sun-Heliosphere-Planetary system",
+      "action": "Draft a one-page ENA/PUI science concept now; map it to the topics on release.",
+      "notes": "Oct 20, 2026: next ROSES edition is ROSES-27, due by Jan 2027; elements not yet named.",
+      "sources": [
+        {
+          "label": "NASA: ROSES-25 Amendment 44",
+          "url": "https://science.nasa.gov/?p=1196618"
+        },
+        {
+          "label": "Amendment 66 (Step-2 date)",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/amendment-66-b-2-heliophysics-foundational-research-step-2-due-date-announced-and-correction/"
+        },
+        {
+          "label": "NASA: ROSES-27 to be released by Jan 2027 (Oct 20, 2026)",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/nasa-prepares-roses-27-to-advance-american-science-and-leadership-in-space/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:41:44Z"
+    },
+    "next-hlcas": {
+      "abbr": "H-LCAS",
+      "element": "ROSES-25 B.7",
+      "title": "Heliophysics Low-Cost Access to Space",
+      "division": "Heliophysics",
+      "sid": "",
+      "status": "open",
+      "statusNote": "Added Oct 7, 2026",
+      "due": "2026-11-20",
+      "dueLabel": "Step-1 proposal (Step-2 due Mar 16, 2027)",
+      "a": 2,
+      "r": 1,
+      "t": 1,
+      "brings": [
+        "C8",
+        "C1",
+        "C4",
+        "C5",
+        "C13"
+      ],
+      "bringsText": "The SWAPI-like TOF as a sounding-rocket, high-altitude balloon or airborne payload (a ride and a TRL step), SWAPI heritage, in-house build and calibration, and student hardware experience.",
+      "gaps": "Needs a rocket, balloon or airborne payload partner and flight-project management (G2). The solar wind is out of reach from suborbital flights, so frame it as science-enabling with named science questions. CubeSats are out of scope since the Oct 16 correction; H-FORT is the CubeSat route.",
+      "says": "",
+      "action": "Decide by early November whether to pursue a TOF sounding-rocket or balloon demo; line up a platform partner and draft the Step-1.",
+      "notes": "Added to ROSES-25 by Amendment 78 (Oct 7), not held for ROSES-26 as the July planning list said. A correction on Oct 16 replaced CubeSats with airborne platforms, so B.7 covers sounding rockets, high-altitude balloons and airborne platforms; dates unchanged. Investigations self-identify as science or science-enabling. Step-1 is due the same day as SSF's (Nov 20).",
+      "sources": [
+        {
+          "label": "NASA: ROSES-25 Amendment 78",
+          "url": "https://science.nasa.gov/amendment-78-new-opportunity-b-7-heliophysics-low-cost-access-to-space/"
+        },
+        {
+          "label": "NASA: Correction to B.7 (Oct 16, 2026)",
+          "url": "https://science.nasa.gov/?p=1490563"
+        }
+      ],
+      "flag": "new",
+      "origin": "claude",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-23T21:05:00Z"
+    },
+    "next-htides": {
+      "abbr": "H-TIDeS",
+      "element": "ROSES-25 B.6",
+      "title": "Heliophysics Technology and Instrument Development for Science",
+      "division": "Heliophysics",
+      "sid": "",
+      "status": "expected",
+      "statusNote": "Likely; ROSES-25 round was due Apr 15, 2026",
+      "due": null,
+      "dueLabel": "TBD",
+      "a": 3,
+      "r": 2,
+      "t": 2,
+      "brings": [
+        "C8",
+        "C1",
+        "C4",
+        "C6"
+      ],
+      "bringsText": "The SWAPI-like TOF, SWAPI design heritage, the calibration facility and beam diagnostics (RPA, ABM, MCP).",
+      "gaps": "Tie TOF development to 2024 Decadal heliophysics questions, not only lunar ones; needs a TRL plan and test campaign.",
+      "says": "advance the development of new instruments and technologies",
+      "action": "Write one TRL roadmap that serves both H-TIDeS and DALI.",
+      "notes": "Not on the July planning list, but it recurs most years. The ROSES-25 version needed no NOI or Step-1. Oct 20, 2026: next ROSES edition is ROSES-27, due by Jan 2027; elements not yet named.",
+      "sources": [
+        {
+          "label": "NASA: ROSES-25 Amendment 35",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/amendment-35-new-opportunity-in-roses-25-b-6-heliophysics-instrument-development-for-science"
+        },
+        {
+          "label": "NASA: ROSES-27 to be released by Jan 2027 (Oct 20, 2026)",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/nasa-prepares-roses-27-to-advance-american-science-and-leadership-in-space/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:41:44Z"
+    },
+    "next-lws": {
+      "abbr": "LWS",
+      "element": "ROSES-25 B.3",
+      "title": "Living With a Star Science — next round",
+      "division": "Heliophysics",
+      "sid": "",
+      "status": "expected",
+      "statusNote": "ROSES-25 round closed Jun 22, 2026",
+      "due": null,
+      "dueLabel": "TBD",
+      "a": 1,
+      "r": 2,
+      "t": 2,
+      "brings": [
+        "C9"
+      ],
+      "bringsText": "Heliospheric science with IMAP, PSP and SolO data.",
+      "gaps": "Fit depends on next year's focused science topics.",
+      "says": "",
+      "action": "Screen the topic list on release.",
+      "notes": "Element text not checked yet. Oct 20, 2026: next ROSES edition is ROSES-27, due by Jan 2027; elements not yet named.",
+      "sources": [
+        {
+          "label": "Grants.gov: ROSES-25 B.3 LWS",
+          "url": "https://simpler.grants.gov/opportunity/360913"
+        },
+        {
+          "label": "NASA: ROSES-27 to be released by Jan 2027 (Oct 20, 2026)",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/nasa-prepares-roses-27-to-advance-american-science-and-leadership-in-space/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:41:44Z"
+    },
+    "next-picasso": {
+      "abbr": "PICASSO",
+      "element": "ROSES-27 (unconfirmed)",
+      "title": "Planetary Instrument Concepts for the Advancement of Solar System Observations",
+      "division": "Planetary",
+      "sid": "",
+      "status": "expected",
+      "statusNote": "Next edition is ROSES-27, due by Jan 2027; element list not yet published",
+      "due": null,
+      "dueLabel": "TBD",
+      "a": 1,
+      "r": 2,
+      "t": 2,
+      "brings": [
+        "C8",
+        "C4"
+      ],
+      "bringsText": "The TOF concept, if it is below TRL 4, and the test facility.",
+      "gaps": "Needs a planetary-science framing; check lunar eligibility against DALI.",
+      "says": "",
+      "action": "Fallback only if the TOF can't show TRL 4 in time for DALI.",
+      "notes": "Element text not checked yet. Oct 20, 2026: NASA announced ROSES-27 for release no later than Jan 2027 (~50 elements); no ROSES-26 has been released, and NASA has not yet named which elements ROSES-27 will include.",
+      "sources": [
+        {
+          "label": "SMD Planning List (Jul 21, 2026)",
+          "url": "https://soma.larc.nasa.gov/StandardAO/pdf_files/Planning%20List%20for%20SMD%20Solicitations%2020260721.pdf"
+        },
+        {
+          "label": "NASA: ROSES-27 to be released by Jan 2027 (Oct 20, 2026)",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/nasa-prepares-roses-27-to-advance-american-science-and-leadership-in-space/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:41:44Z"
+    },
+    "next-prism": {
+      "abbr": "PRISM",
+      "element": "ROSES-25 F.10 (last round)",
+      "title": "Payloads and Research Investigations on the Surface of the Moon — next round",
+      "division": "Cross-division",
+      "sid": "",
+      "status": "unknown",
+      "statusNote": "Last round received Feb 27, 2026",
+      "due": null,
+      "dueLabel": "TBD",
+      "a": 2,
+      "r": 0,
+      "t": 1,
+      "brings": [
+        "C8"
+      ],
+      "bringsText": "A future flight ride for a TRL-6 lunar TOF, after DALI.",
+      "gaps": "Needs a flight-ready instrument and a payload suite and team; CLPS delivery.",
+      "says": "",
+      "action": "Long-term target after DALI.",
+      "notes": "",
+      "sources": [
+        {
+          "label": "SMD Planning List (Jul 21, 2026)",
+          "url": "https://soma.larc.nasa.gov/StandardAO/pdf_files/Planning%20List%20for%20SMD%20Solicitations%2020260721.pdf"
+        },
+        {
+          "label": "DALI to PRISM pathway (NASA Glenn)",
+          "url": "https://www.nasa.gov/glenn/glenn-expertise-space-exploration/pesto/dali/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "r25-b8-ssf": {
+      "abbr": "SSF",
+      "element": "ROSES-25 B.8",
+      "title": "Heliophysics Spaceflight Science Foundations",
+      "division": "Heliophysics",
+      "sid": "NNH25ZDA001N-SSF",
+      "status": "open",
+      "statusNote": "Added Oct 8, 2026",
+      "due": "2026-11-20",
+      "dueLabel": "Step-1 proposal (Step-2 due Feb 5, 2027); proposer telecon Oct 26, 2 pm ET",
+      "a": 3,
+      "r": 2,
+      "t": 1,
+      "brings": [
+        "C1",
+        "C2",
+        "C3",
+        "C9"
+      ],
+      "bringsText": "SWAPI flight heritage, a Princeton-led mission (IMAP), polar solar-wind and energetic-particle heritage, and solar wind and pickup-ion science: the in situ suite for Solar Polar.",
+      "gaps": "Solar Polar is led by remote sensing, so it needs a solar remote-sensing partner (G1) and a mission-design partner (G2). Links (magnetosphere–aurora) is outside PSPL's core.",
+      "says": "targets the two highest-priority future spaceflight projects",
+      "action": "Join the Oct 26 telecon; decide on a Solar Polar in situ formulation concept by early November.",
+      "notes": "One proposal per PI (Institutional-PI exception).",
+      "sources": [
+        {
+          "label": "NASA: ROSES-25 Amendment 79",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/amendment-79-new-opportunity-b-8-heliophysics-spaceflight-science-foundations/"
+        }
+      ],
+      "flag": "new",
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "r25-c2-sss": {
+      "abbr": "SSS",
+      "element": "ROSES-25 C.2",
+      "title": "Solar System Science — final ROSES-25 cutoff",
+      "division": "Planetary",
+      "sid": "NNH25ZDA001N-SCUBED",
+      "status": "open",
+      "statusNote": "Rolling element; final ROSES-25 cutoff",
+      "due": "2026-11-12",
+      "dueLabel": "Final ROSES-25 submission cutoff",
+      "a": 3,
+      "r": 3,
+      "t": 1,
+      "brings": [
+        "C10",
+        "C11"
+      ],
+      "bringsText": "Dust-impact detection on electric-field instruments (MAVEN/LPW, Juno/Waves, PSP, SolO) and TPS charge-yield lab data.",
+      "gaps": "Overlap check against active awards that use the same technique (SolO GI to 2028; NFDAP Jupiter dust to 2027). Research-security training for the PI and Co-Is at 10% effort or more.",
+      "says": "content, origin, and evolution of the Solar System",
+      "action": "Read the two upcoming changes Amendment 60 flags for November submitters; confirm the biosketch and C&P format.",
+      "notes": "",
+      "sources": [
+        {
+          "label": "NASA: ROSES-25 Amendment 60",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/amendment-60-final-2025-due-date-extended-for-c-2-solar-system-science/"
+        },
+        {
+          "label": "Repost with scope text",
+          "url": "https://astrobiology.com/2026/07/03/nasa-roses-25-amendment-60-due-date-extended-for-c-2-solar-system-science/"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "r25-c4-psef": {
+      "abbr": "PSEF",
+      "element": "ROSES-25 C.4",
+      "title": "Planetary Science Enabling Facilities",
+      "division": "Planetary",
+      "sid": "NNH25ZDA001N-PSEF",
+      "status": "open",
+      "statusNote": "Added Jul 21, 2026",
+      "due": "2026-11-10",
+      "dueLabel": "Proposal (no NOI or Step-1)",
+      "a": 2,
+      "r": 1,
+      "t": 0,
+      "brings": [
+        "C4",
+        "C5"
+      ],
+      "bringsText": "The ion and neutral beam calibration facility (0.1–30 keV, multi-species), plus the cleanroom and vacuum chambers.",
+      "gaps": "Must serve a planetary-science (PSD-funded) user community: documented users, an access and scheduling plan, and a planetary science case for ion and neutral beam work (G4).",
+      "says": "experimental and analytical research facilities to be made available to the community",
+      "action": "Go/no-go this week. If no-go, log it for the next PSEF round (solicited every two calendar years).",
+      "notes": "Dual-anonymous review is new this year. Amendment 75 (Sep 22) expanded the SciENcv format required for the biosketch and current and pending support.",
+      "sources": [
+        {
+          "label": "NASA: ROSES-25 Amendment 65",
+          "url": "https://science.nasa.gov/researchers/solicitations/roses-2025/amendment-65-new-opportunity-c-4-planetary-science-enabling-facilities/"
+        },
+        {
+          "label": "PSEF FAQ (Jul 21, 2026)",
+          "url": "https://assets.science.nasa.gov/content/dam/science/cds/researchers/research-facilities-for-planetary-science/2026/C.04%20PSEF%20FAQ_072126_v3.docx"
+        },
+        {
+          "label": "NASA: ROSES-25 Amendment 75 (SciENcv)",
+          "url": "https://science.nasa.gov/?p=1385447"
+        }
+      ],
+      "origin": "seed",
+      "createdAt": "2026-10-22T21:30:00Z",
+      "updatedAt": "2026-10-23T21:05:00Z"
+    }
+  },
+  "caps": {
+    "C1": {
+      "kind": "cap",
+      "category": "Flight heritage",
+      "name": "SWAPI solar wind and pickup-ion instrument on IMAP",
+      "evidence": "Designed, built and calibrated in the Princeton Space Physics Lab; IMAP launched Sep 24, 2025 and SWAPI is operating.",
+      "maturity": "Flight-proven",
+      "source": {
+        "label": "Princeton news (Jul 2025)",
+        "url": "https://www.princeton.edu/news/2025/07/24/nasa-princeton-hands-lab-trains-students-teamwork-building-space-equipment"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 1,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "C2": {
+      "kind": "cap",
+      "category": "Mission leadership",
+      "name": "Princeton-led IMAP mission",
+      "evidence": "Princeton leads IMAP; APL builds and operates the spacecraft.",
+      "maturity": "Flight-proven",
+      "source": {
+        "label": "Princeton news (Feb 2023)",
+        "url": "https://www.princeton.edu/index%2ephp/news/2023/02/13/princeton-space-nasas-imap-mission-clears-critical-hurdle-launch"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 2,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "C3": {
+      "kind": "cap",
+      "category": "PI heritage (lab lead)",
+      "name": "Energetic particle, ENA and polar solar-wind missions",
+      "evidence": "PSP IS☉IS, IBEX, Ulysses/SWOOPS. Public record; please verify the wording.",
+      "maturity": "Flight-proven",
+      "source": {
+        "label": "Public record (verify)"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 3,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "C4": {
+      "kind": "cap",
+      "category": "Facility",
+      "name": "Ion and neutral beamline test and calibration facility",
+      "evidence": "Multi-species beam, 0.1–30 keV; used to test and calibrate SWAPI, IMAP-Lo and CoDICE.",
+      "maturity": "Operational",
+      "source": {
+        "label": "Space Physics Lab document",
+        "url": "https://spacephysics.princeton.edu/document/332"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 4,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "C5": {
+      "kind": "cap",
+      "category": "Facility",
+      "name": "Cleanroom and vacuum chambers",
+      "evidence": "Flight-hardware assembly and test (SWAPI).",
+      "maturity": "Operational",
+      "source": {
+        "label": "Daily Princetonian (Sep 2025)",
+        "url": "https://www.dailyprincetonian.com/article/2025/09/princeton-news-broadfocus-nasa-princeton-imap-launch-spacex-mission-david-mccomas"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 5,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "C6": {
+      "kind": "cap",
+      "category": "Lab diagnostics",
+      "name": "Beam characterization: RPA (energy and resolution), carbon-foil ABM (flux), imaging MCP (uniformity)",
+      "evidence": "RPA in design; ABM and MCP plan set for SWAPI EM+ calibration.",
+      "maturity": "In development",
+      "source": {
+        "label": "Mitchell's notes (Oct 2026)"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 6,
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "C7": {
+      "kind": "cap",
+      "category": "Hardware",
+      "name": "SWAPI EM+ engineering unit",
+      "evidence": "Under calibration with H, H2 and He beams; possible testbed for derived designs.",
+      "maturity": "Lab unit",
+      "source": {
+        "label": "Mitchell's notes (Oct 2026)"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 7,
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "C8": {
+      "kind": "cap",
+      "category": "Hardware in development",
+      "name": "SWAPI-like time-of-flight (TOF) instrument, lunar target",
+      "evidence": "Goal: TRL 6 and a flight opportunity.",
+      "maturity": "TRL to confirm",
+      "source": {
+        "label": "Mitchell's notes (Sep 2026)"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 8,
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "C9": {
+      "kind": "cap",
+      "category": "Science",
+      "name": "Heliospheric ENAs, interstellar neutral He, pickup ions",
+      "evidence": "IBEX and IMAP-Lo/Hi spectra (ribbon, GDF); ISN He; He+ focusing cone.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Mitchell's notes"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 9,
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "C10": {
+      "kind": "cap",
+      "category": "Science",
+      "name": "Dust impacts detected by electric-field instruments",
+      "evidence": "PSP, Solar Orbiter, Juno/Waves, MAVEN/LPW; active SolO GI (2024–2028) and NFDAP (2023–2027) awards.",
+      "maturity": "Active, funded",
+      "source": {
+        "label": "Mitchell's notes"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 10,
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "C11": {
+      "kind": "cap",
+      "category": "Lab data",
+      "name": "Dust-impact charge yield of PSP heat-shield (TPS) material",
+      "evidence": "Measurements in hand; JGR paper in preparation.",
+      "maturity": "Data in hand",
+      "source": {
+        "label": "Mitchell's notes (Oct 2026)"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 11,
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "C12": {
+      "kind": "cap",
+      "category": "Tools",
+      "name": "SPICE-based orbit and geometry viewer (Ouimap Viewer)",
+      "evidence": "IMAP, SolO and PSP positions from real kernels; single-user, in development.",
+      "maturity": "Prototype",
+      "source": {
+        "label": "Mitchell's notes (Oct 2026)"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 12,
+      "updatedAt": "2026-10-23T22:28:32.000Z"
+    },
+    "C13": {
+      "kind": "cap",
+      "category": "Training and workforce",
+      "name": "Space Physics Laboratory course (AST 250/251)",
+      "evidence": "Undergraduates design and build instruments in the cleanroom; helped during IMAP calibrations.",
+      "maturity": "Ongoing",
+      "source": {
+        "label": "Princeton news (Jul 2025)",
+        "url": "https://www.princeton.edu/news/2025/07/24/nasa-princeton-hands-lab-trains-students-teamwork-building-space-equipment"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 13,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "G1": {
+      "kind": "gap",
+      "category": "Instruments",
+      "name": "Solar remote sensing (magnetograph, helioseismology, EUV imaging)",
+      "evidence": "Needed for Solar Polar-type missions. Inferred by Claude; confirm or delete.",
+      "maturity": "Partner needed",
+      "source": {
+        "label": "Claude inference"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 14,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "G2": {
+      "kind": "gap",
+      "category": "Spacecraft and operations",
+      "name": "Spacecraft bus, mission operations, SmallSat flight-project management",
+      "evidence": "For IMAP these sit with APL. Inferred by Claude; confirm or delete.",
+      "maturity": "Partner needed",
+      "source": {
+        "label": "Princeton news (Feb 2023)",
+        "url": "https://www.princeton.edu/index%2ephp/news/2023/02/13/princeton-space-nasas-imap-mission-clears-critical-hurdle-launch"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 15,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "G3": {
+      "kind": "gap",
+      "category": "Environmental test",
+      "name": "Lunar environment qualification (thermal extremes, dust, radiation)",
+      "evidence": "Needed on the DALI-to-PRISM path. Inferred by Claude; confirm or delete.",
+      "maturity": "Verify",
+      "source": {
+        "label": "Claude inference"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 16,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "G4": {
+      "kind": "gap",
+      "category": "Community",
+      "name": "Planetary-science user community for a shared facility",
+      "evidence": "Needed for a PSEF proposal. Inferred by Claude; confirm or delete.",
+      "maturity": "Verify",
+      "source": {
+        "label": "Claude inference"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 17,
+      "updatedAt": "2026-10-22T21:30:00Z"
+    }
+  }
+}

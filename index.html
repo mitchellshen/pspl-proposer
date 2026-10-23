@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>PSPL Proposer</title>
+<meta name="description" content="NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='6' fill='%23F6ECD3' stroke='%23B8861B' stroke-width='3'/%3E%3Ctext x='16' y='22.5' font-family='Arial,sans-serif' font-size='17' font-weight='700' text-anchor='middle' fill='%23845C08'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css?v=1.1.0">
+<script src="app.js?v=1.1.0" defer></script>
+</head>
+<body>
+<template id="app-shell">
+<header class="masthead gutter">
+  <div class="inner">
+    <div class="mast">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">PSPL</span>
+        <div class="brand-text">
+          <h1>PSPL Proposer</h1>
+          <p class="sub">NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.</p>
+        </div>
+      </div>
+      <div class="mast-actions">
+        <span class="checked mono" id="checked"></span>
+        <button class="btn" id="checkNowBtn" type="button" title="Reads NASA's ROSES blog and Grants.gov for new and changed calls">Check NASA now</button>
+        <button class="btn" id="editBtn" type="button" aria-pressed="false" title="Turn editing on or off in this browser">Edit</button>
+        <button class="btn primary" id="addCallBtn" type="button" hidden>Add a call</button>
+      </div>
+    </div>
+    <div class="stats" aria-label="Board summary">
+      <div class="stat"><span class="stat-n" id="st-open">&mdash;</span><span class="stat-l">open now</span></div>
+      <div class="stat"><span class="stat-n" id="st-soon">&mdash;</span><span class="stat-l">due within 30 days</span></div>
+      <div class="stat"><span class="stat-n" id="st-high">&mdash;</span><span class="stat-l">high fits</span></div>
+      <div class="stat" id="st-review-wrap" hidden><span class="stat-n gold" id="st-review">0</span><span class="stat-l">NASA posts to review</span></div>
+      <div class="stat"><span class="stat-n" id="st-conf">&mdash;</span><span class="stat-l">capabilities to confirm</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="notice gutter" id="noticeBand" hidden>
+  <div class="inner"><p id="noticeText"></p></div>
+</div>
+
+<div class="band gutter" id="changesBand" hidden>
+  <div class="inner">
+    <div class="band-inner">
+      <p id="changesText"></p>
+      <div class="band-actions">
+        <button class="btn primary" id="publishBtn" type="button">Publish changes</button>
+        <button class="btn ghost" id="discardBtn" type="button">Discard my changes</button>
+      </div>
+    </div>
+    <div class="publish" id="publishPanel" hidden>
+      <div class="publish-head">
+        <p id="publishSummary"></p>
+        <button class="btn ghost" id="publishClose" type="button">Close</button>
+      </div>
+      <ol class="steps" id="publishSteps">
+        <li><div class="step-body"><button class="btn primary" id="copyBoardBtn" type="button">Copy the new board</button><span class="help" id="copyMsg" role="status"></span></div></li>
+        <li><div class="step-body"><a class="btn" id="editLink" href="#" target="_blank" rel="noopener noreferrer">Open board.json on GitHub</a><p>Sign in if GitHub asks. Click into the file, select everything (Ctrl+A, or Cmd+A on a Mac) and paste over it.</p></div></li>
+        <li><div class="step-body"><p>Choose <b>Commit changes</b> and add a short note on what you changed. The site updates within a few minutes; reload this page then and this band clears.</p></div></li>
+      </ol>
+      <label class="sr" for="publishText">The new board.json</label>
+      <textarea id="publishText" rows="5" readonly hidden></textarea>
+      <p class="help" id="publishAlt">No GitHub access? <button class="linklike" id="downloadBoardBtn" type="button">Download board.json</button> and send it to <span id="maintainerBand">whoever looks after the board</span>.</p>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs gutter" aria-label="Sections">
+  <div class="inner" role="tablist">
+    <button class="tab" role="tab" id="tab-opportunities" aria-controls="panel-opportunities" type="button">Opportunities<span class="n" id="n-opps"></span></button>
+    <button class="tab" role="tab" id="tab-capabilities" aria-controls="panel-capabilities" type="button">Capabilities<span class="n" id="n-caps"></span></button>
+    <button class="tab" role="tab" id="tab-method" aria-controls="panel-method" type="button">How it works</button>
+  </div>
+</nav>
+
+<main class="gutter">
+  <div class="inner">
+    <section id="panel-opportunities" role="tabpanel" aria-labelledby="tab-opportunities">
+      <section class="card match" id="addPanel" hidden aria-labelledby="addTitle">
+        <div class="match-head">
+          <h2 id="addTitle">Add a call</h2>
+          <button class="btn ghost" id="addClose" type="button">Close</button>
+        </div>
+        <p class="match-intro">Fill in what you know and add it to the board. To get scores, gaps and a next action suggested, use Suggest with AI: it builds a prompt from the call and the capability register for an AI assistant such as Copilot, ChatGPT or Claude.</p>
+        <form class="form" id="addForm" novalidate>
+          <label class="full"><span>Call name</span><input id="a-title" name="title" type="text" maxlength="200" placeholder="e.g. Heliophysics Low-Cost Access to Space"></label>
+          <label><span>Short name</span><input id="a-abbr" name="abbr" type="text" maxlength="24" placeholder="e.g. H-LCAS"></label>
+          <label><span>Element or call number</span><input id="a-element" name="element" type="text" maxlength="60" placeholder="e.g. ROSES-25 B.7"></label>
+          <label><span>Division</span><select id="a-division" name="division"></select></label>
+          <label><span>Status</span><select id="a-status" name="status">
+            <option value="open">Open</option>
+            <option value="step2">Step-2 only</option>
+            <option value="expected">Expected</option>
+            <option value="unknown">Unknown</option>
+          </select></label>
+          <label><span>Next deadline</span><input id="a-due" name="due" type="date"></label>
+          <label><span>What's due</span><input id="a-duelabel" name="dueLabel" type="text" maxlength="200" placeholder="e.g. Step-1 proposal"></label>
+          <label class="full"><span>Link to the call</span><input id="a-source" name="source" type="url" maxlength="500" placeholder="https://science.nasa.gov/researchers/solicitations/..."></label>
+          <label class="full"><span>Call text <span class="help">(optional; it helps the AI suggestion)</span></span><textarea id="a-text" name="text" rows="5" placeholder="Paste the scope, eligibility and due-date sections of the call."></textarea></label>
+          <div class="form-actions">
+            <button class="btn primary" id="a-save" type="submit">Add to board</button>
+            <button class="btn" id="a-ai" type="button">Suggest with AI</button>
+          </div>
+        </form>
+        <div class="aibox" id="aiBox" hidden>
+          <p><b>1.</b> Copy this prompt and paste it into an AI assistant you can use, such as Copilot, ChatGPT or Claude.</p>
+          <label class="sr" for="a-prompt">Prompt for the AI assistant</label>
+          <textarea id="a-prompt" rows="6" readonly></textarea>
+          <div class="row"><button class="btn" id="a-copy" type="button">Copy prompt</button><span class="help" id="a-copied"></span></div>
+          <p><b>2.</b> Paste the assistant's whole reply here.</p>
+          <label class="sr" for="a-reply">The AI assistant's reply</label>
+          <textarea id="a-reply" rows="5" placeholder="Paste the reply, including the part in braces { }"></textarea>
+          <div class="row"><button class="btn" id="a-read" type="button">Use this reply</button><span class="error-line" id="a-aimsg" role="status"></span></div>
+        </div>
+        <div id="addResult"></div>
+      </section>
+
+      <div class="toolbar">
+        <label class="search"><span class="sr">Search calls</span><input type="search" id="oppSearch" placeholder="Search calls, codes or capability IDs" autocomplete="off"></label>
+        <div class="seg" role="group" aria-label="Filter by fit">
+          <button type="button" data-fit="all">All</button><button type="button" data-fit="high">High</button><button type="button" data-fit="medium">Medium</button><button type="button" data-fit="low">Low</button>
+        </div>
+        <button class="btn" id="exportOpps" type="button">Export CSV</button>
+      </div>
+      <div id="lanes"></div>
+    </section>
+
+    <section id="panel-capabilities" role="tabpanel" aria-labelledby="tab-capabilities" hidden>
+      <div class="toolbar">
+        <label class="search"><span class="sr">Search the register</span><input type="search" id="capSearch" placeholder="Search capabilities, gaps or sources" autocomplete="off"></label>
+        <button class="btn" id="addCap" type="button" hidden>Add capability</button>
+        <button class="btn" id="exportCaps" type="button">Export CSV</button>
+      </div>
+      <p class="panel-intro">Scores and AI suggestions are judged against these rows, so a wrong row means wrong matches. Dashed rows are known gaps that need a partner. <span id="capIntroView">Spot something wrong? Choose Edit at the top to correct it, then publish.</span><span id="capIntroEdit" hidden>Tick Confirmed once a row is right.</span></p>
+      <p class="cap-summary" id="capSummary"></p>
+      <div class="list" id="capList"></div>
+    </section>
+
+    <section id="panel-method" role="tabpanel" aria-labelledby="tab-method" hidden>
+      <div class="prose">
+        <h2>One board for the lab</h2>
+        <p>Everyone opens the same page, <a id="siteLink" href="https://mitchellshen.github.io/pspl-proposer/">mitchellshen.github.io/pspl-proposer</a>, in Edge, Chrome, Safari or Firefox on Windows or Mac. There's nothing to install and no account to make. Bookmark the page rather than saving a copy, so you always see the latest board.</p>
+        <p>The board itself is one file, board.json, in the board's GitHub repository. Every published change is a commit there, so there's a full history of who changed what and when, and any change can be undone.</p>
+        <h2>Changing the board</h2>
+        <ol>
+          <li>Choose Edit at the top. It applies to this browser only, and you can turn it off the same way.</li>
+          <li>Correct capabilities, adjust scores, add calls and review new NASA posts. Your changes stay in this browser, counted in the gold band at the top, until you publish them.</li>
+          <li>Choose Publish changes in the gold band and follow its three steps: copy the new board, paste it over board.json on GitHub, and commit. You need a GitHub account that has been added to the board's repository.</li>
+          <li>No GitHub access? Download board.json from the same band and send it to <span id="maintainerInline">whoever looks after the board</span>.</li>
+        </ol>
+        <p>The board and its repository are public, so anyone with the address can read them. Keep budgets, proposal plans that aren't public yet and reviewer comments off the board.</p>
+        <div class="settings" id="maintainerBox" hidden>
+          <label for="set-maintainer">Looked after by<input id="set-maintainer" type="text" maxlength="80" placeholder="Name of whoever publishes the board"></label>
+          <div><button class="btn" id="set-maintainer-save" type="button">Save name</button></div>
+        </div>
+        <h2>Finding new calls</h2>
+        <p>Check NASA now reads NASA's ROSES blog, where NASA announces new program elements, amendments and corrections, and Grants.gov when your browser allows it. Posts the board hasn't reviewed yet wait under To review. In edit mode, add the ones that fit, mark the rest reviewed, and publish. NASA's solicitation site (NSPIRES) can't be read by the page, so open the links for full call texts.</p>
+        <p id="checkNote"></p>
+        <h2>How a call is scored</h2>
+        <p>Each call gets three whole-number scores, and their sum sets the fit. In edit mode, change them with the + and &minus; controls on any call.</p>
+        <div class="tablewrap">
+          <table class="rubric">
+            <thead><tr><th>Score</th><th>Range</th><th>Question it answers</th></tr></thead>
+            <tbody>
+              <tr><td>Alignment</td><td>0&ndash;3</td><td>How directly do the call's science or technology goals match what PSPL does?</td></tr>
+              <tr><td>Readiness</td><td>0&ndash;3</td><td>Could PSPL write a competitive proposal today with what the register shows?</td></tr>
+              <tr><td>Timing</td><td>0&ndash;2</td><td>0 if under about three weeks or closed to new entrants, 1 if about a month away or unknown, 2 if months away or not yet released.</td></tr>
+              <tr><td>Fit</td><td>0&ndash;8</td><td>High 6&ndash;8, Medium 4&ndash;5, Low 0&ndash;3.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h2>AI suggestions</h2>
+        <p>In edit mode, Suggest with AI on a new call and Rescore with AI on an existing one build a prompt from the call and the capability register. Paste it into an AI assistant you can use, paste the reply back, and review the suggestion before you keep it. The page itself never sends the board anywhere.</p>
+        <h2>What isn't covered yet</h2>
+        <p>NSF, DoD, ESA and other funders. Calls marked Expected are based on ROSES-25 and NASA's planning list, and may change when ROSES-27 is released.</p>
+        <h2>This browser</h2>
+        <div class="settings">
+          <label for="set-theme">Theme<select id="set-theme">
+            <option value="auto">Match my computer</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select></label>
+        </div>
+        <p class="foot" id="fileInfo"></p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</template>
+<div id="app">
+  <div class="boot gutter"><div class="inner">
+    <p class="boot-title">PSPL Proposer</p>
+    <p>Loading the board&hellip; If nothing appears, open the shared board at <a href="https://mitchellshen.github.io/pspl-proposer/">mitchellshen.github.io/pspl-proposer</a>.</p>
+  </div></div>
+</div>
+<noscript><p style="font:16px sans-serif;padding:24px">PSPL Proposer needs JavaScript. Open it in a web browser such as Edge, Chrome, Safari or Firefox.</p></noscript>
+</body>
+</html>
