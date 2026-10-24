@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css?v=1.3.1">
-<script src="app.js?v=1.3.1" defer></script>
+<link rel="stylesheet" href="style.css?v=1.4.0">
+<script src="app.js?v=1.4.0" defer></script>
 </head>
 <body>
 <template id="app-shell">
@@ -20,7 +20,7 @@
   <div class="inner">
     <div class="lab-bar">
       <a class="lab-banner" href="https://spacephysics.princeton.edu/" title="Space Physics at Princeton">
-        <img src="https://spacephysics.princeton.edu/sites/g/files/toruqf1376/files/spp_banner_alt.png" alt="Space Physics at Princeton" width="385" height="44" referrerpolicy="no-referrer" onerror="this.hidden = true; this.nextElementSibling.hidden = false;">
+        <img src="assets/spp-banner.png" alt="Space Physics at Princeton" width="388" height="44" onerror="this.hidden = true; this.nextElementSibling.hidden = false;">
         <span class="lab-name" hidden>Space Physics at Princeton</span>
       </a>
     </div>
@@ -135,6 +135,7 @@
           <button type="button" data-fit="all">All</button><button type="button" data-fit="high">High</button><button type="button" data-fit="medium">Medium</button><button type="button" data-fit="low">Low</button>
         </div>
         <button class="btn" id="exportOpps" type="button">Export CSV</button>
+        <button class="btn" id="exportIcs" type="button" title="Save every upcoming deadline as calendar events, each with a reminder a week before">Add deadlines to calendar</button>
       </div>
       <div id="lanes"></div>
     </section>
@@ -155,6 +156,8 @@
         <h2>One board for the lab</h2>
         <p>Everyone opens the same page, <a id="siteLink" href="https://mitchellshen.github.io/pspl-proposer/">mitchellshen.github.io/pspl-proposer</a>, in Edge, Chrome, Safari or Firefox on Windows or Mac. There's nothing to install and no account to make. Bookmark the page rather than saving a copy, so you always see the latest board.</p>
         <p>The board itself is one file, board.json, in the board's GitHub repository. Every published change is a commit there, so there's a full history of who changed what and when, and any change can be undone.</p>
+        <h2>Sharing a call</h2>
+        <p>Open a call and choose Copy link: the link opens the board with that call open, for anyone you send it to. Add to calendar saves the call's deadline as a calendar event with a reminder a week before, and Add deadlines to calendar, above the list of calls, does the same for every upcoming deadline on the board. Calendar files open in Outlook, Apple Calendar and Google Calendar.</p>
         <h2>Who can change the board</h2>
         <p>Anyone can choose Edit and try changes, including correcting or confirming capabilities, but those changes stay in their own browser. Nothing reaches the shared board until it's committed to board.json on GitHub, and only people added to the board's repository can commit. Everyone else's changes go to <span id="maintainerInline">whoever looks after the board</span> to approve.</p>
         <ol>
@@ -169,7 +172,8 @@
           <div><button class="btn" id="set-maintainer-save" type="button">Save name</button></div>
         </div>
         <h2>Finding new calls</h2>
-        <p>Check NASA now reads NASA's ROSES blog, where NASA announces new program elements, amendments and corrections, and Grants.gov when your browser allows it. Posts the board hasn't reviewed yet wait under To review. In edit mode, add the ones that fit, mark the rest reviewed, and publish. NASA's solicitation site (NSPIRES) can't be read by the page, so open the links for full call texts.</p>
+        <p>Check NASA now reads NASA's ROSES blog, where NASA announces new program elements, amendments and corrections, and NASA's listings on Grants.gov. It runs in your browser, so anyone can use it, and what it finds is kept in that browser. Posts the board hasn't reviewed yet wait under To review. In edit mode, add the ones that fit, mark the rest reviewed, and publish. NASA's solicitation site (NSPIRES) can't be read by the page, so open the links for full call texts.</p>
+        <p>Open calls whose last deadline has passed move to Deadline passed at the bottom of the list, until someone sets the next deadline or archives them.</p>
         <p id="checkNote"></p>
         <h2>How a call is scored</h2>
         <p>Each call gets three whole-number scores, and their sum sets the fit. In edit mode, change them with the + and &minus; controls on any call.</p>

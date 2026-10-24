@@ -12,6 +12,8 @@ The whole board (the calls, their scores and the lab's capability register) live
 
 Bookmark the page rather than saving a copy. A saved copy still loads the latest board from the site and says it's a copy.
 
+To point someone at one call, open it and choose **Copy link**; the link opens the board with that call open. **Add deadlines to calendar** saves every upcoming deadline as calendar events (Outlook, Apple Calendar, Google Calendar), each with a reminder a week before.
+
 ## Who can change the board
 
 Anyone can choose **Edit** on the page and try changes, including correcting or confirming capabilities, but those changes stay in their own browser. Nothing reaches the shared board until it's committed to `board.json` here, and only the owner and the collaborators they add (**Settings → Collaborators**) can commit. Anyone else who publishes gets GitHub's **Propose changes** instead, which opens a pull request for the owner to approve, or they can download `board.json` and send it on.
@@ -35,14 +37,14 @@ The site is public: anyone with the address can read the board. Keep budgets, pr
 
 ## Checking NASA
 
-**Check NASA now** reads NASA's ROSES blog, where NASA posts new program elements, amendments and corrections, and Grants.gov when the browser allows it. Posts that aren't on the board or reviewed yet wait under **To review**. In edit mode, add the ones that fit, mark the rest reviewed, and publish.
+**Check NASA now** reads NASA's ROSES blog, where NASA posts new program elements, amendments and corrections, and NASA's listings on Grants.gov, straight from the visitor's browser. It asks only for posts changed since the last review. Posts that aren't on the board or reviewed yet wait under **To review**. In edit mode, add the ones that fit, mark the rest reviewed, and publish.
 
 ## Files
 
 | File | What it is |
 | --- | --- |
 | `index.html`, `app.js`, `style.css` | The page. Plain HTML, JavaScript and CSS with no build step. |
-| `assets/` | The Space Physics at Princeton logo and icons. |
+| `assets/` | The Space Physics at Princeton banner, logo and icons. |
 | `board.json` | The board: calls, scores, the capability register and the NASA posts already reviewed. |
 | `tools/check_board.py` | Checks `board.json`; `--format` tidies a hand-edited file into the layout the page writes. |
 | `test/test_site.py` | Browser tests (view and edit mode, publishing, conflicts, saved copies, a broken board, phone width). |

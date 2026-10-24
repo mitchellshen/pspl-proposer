@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "1.3.1";
+  const APP_VERSION = "1.4.0";
   const BOARD_ID = "pspl-proposer";
   const DEFAULT_SITE = "https://mitchellshen.github.io/pspl-proposer/";
   const DEFAULT_REPO = "https://github.com/mitchellshen/pspl-proposer";
@@ -132,7 +132,7 @@
     loaded: false, loadFrom: "", loadBroken: false,
     opps: new Map(), caps: new Map(), storageOk: true,
     tab: "opportunities", fit: "all", q: "", capQ: "", theme: "auto", editMode: false,
-    expanded: new Set(), editingOpp: null, editingCap: null, addingCap: false, archOpen: false, otherOpen: false,
+    expanded: new Set(), editingOpp: null, editingCap: null, addingCap: false, archOpen: false, passedOpen: false, otherOpen: false,
     flashCap: null, flashOpp: null,
     proposals: new Map(),
     add: { reviewKey: null, reviewStamp: null, result: null },
@@ -225,6 +225,11 @@
     if (typeof CH.reviewed[key] === "string") return CH.reviewed[key];
     const b = BASE.nasa.reviewed[key];
     return typeof b === "string" ? b : null;
+  }
+  // Reviewed, and not changed by NASA since.
+  function isReviewed(key, modified) {
+    const r = reviewedStamp(key);
+    return !!r && !(modified && r < modified);
   }
   function markReviewed(items) {
     if (!E()) return;
@@ -428,7 +433,7 @@
     try {
       const y = todayLocal().getFullYear();
       const slugs = [y - 1, y, y + 1, y + 2].map((n) => "roses-" + n).join(",");
-      const found = await getJson(NASA_API + "?slug=" + slugs + "&per_page=20");
+      const found = await getJson(NASA_API + "?slug=" + slugs + "&per_page=20&_fields=id,link");
       if (Array.isArray(found)) {
         for (const p of found) {
           const m = /\/researchers\/solicitations\/roses-(\d{4})\/?$/.exec(String((p && p.link) || ""));
@@ -439,12 +444,24 @@
       if (!blogs.size) throw e;
     }
     if (!blogs.size) throw shapeError();
-    const posts = await getJson(NASA_API + "?parent=" + [...blogs.keys()].join(",") + "&per_page=50&orderby=date&order=desc");
+    // A light listing first: only posts changed since the floor, without their bodies. A full page of
+    // posts with bodies runs to megabytes; the bodies are fetched below only for posts still to review.
+    const posts = await getJson(NASA_API + "?parent=" + [...blogs.keys()].join(",") + "&per_page=100&orderby=modified&order=desc" +
+      "&modified_after=" + floor + "T00:00:00&_fields=id,date,modified,link,title,parent");
     if (!Array.isArray(posts)) throw shapeError();
+    const recent = posts.filter((p) => p && Number.isFinite(p.id) && String(p.modified > p.date ? p.modified : p.date || "").slice(0, 10) >= floor);
+    const need = recent.filter((p) => !(p.content && p.content.rendered) && !isReviewed("wp:" + p.id, String(p.modified || p.date || "")));
+    const bodies = new Map();
+    if (need.length) {
+      try {
+        const got = await getJson(NASA_API + "?include=" + need.map((p) => p.id).join(",") + "&per_page=100&_fields=id,content");
+        if (Array.isArray(got)) for (const g of got) if (g && Number.isFinite(g.id) && g.content) bodies.set(g.id, g.content);
+      } catch (e) { /* the titles still show; only the due-date lines are missing */ }
+    }
     const items = [];
-    for (const p of posts) {
-      const it = nasaItem(p, blogs);
-      if (it && it.stamp.slice(0, 10) >= floor) items.push(it);
+    for (const p of recent) {
+      const it = nasaItem(bodies.has(p.id) ? Object.assign({}, p, { content: bodies.get(p.id) }) : p, blogs);
+      if (it) items.push(it);
     }
     return { items, blogs: [...blogs].map(([id, label]) => ({ id, label })) };
   }
@@ -483,11 +500,13 @@
     };
   }
   async function postGrants(body) {
+    // Sent as text/plain so the browser makes a simple request: Grants.gov answers that from other
+    // sites, but not the preflight a JSON post needs. JSON is the fallback.
     try {
-      return await getJson(GG_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      return await getJson(GG_API, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body) });
     } catch (e) {
       if (e && (e.http || e.name === "AbortError")) throw e;
-      return await getJson(GG_API, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body) });
+      return await getJson(GG_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     }
   }
   async function fetchGrants(floor) {
@@ -563,10 +582,8 @@
   function reviewItems() {
     const out = [];
     for (const it of S.review.items) {
-      const r = reviewedStamp(it.key);
-      const mod = String(it.modified || it.stamp || "");
-      if (r && !(mod && r < mod)) continue;
-      out.push(Object.assign({}, it, { updated: !!r, match: matchOpp(it) }));
+      if (isReviewed(it.key, String(it.modified || it.stamp || ""))) continue;
+      out.push(Object.assign({}, it, { updated: !!reviewedStamp(it.key), match: matchOpp(it) }));
     }
     return out;
   }
@@ -657,9 +674,9 @@
     else if (ready) {
       const checkedOn = parseDay(E() ? maxStr(BASE.checkedOn, CH.meta.checkedOn) : BASE.checkedOn);
       const year = todayLocal().getFullYear();
-      if (checkedOn) parts.push("NASA checked " + fmtDay(checkedOn, checkedOn.getFullYear() !== year));
+      if (checkedOn) parts.push("Last NASA review " + fmtDay(checkedOn, checkedOn.getFullYear() !== year));
       const pub = new Date(BASE.savedAt || "");
-      if (!isNaN(pub)) parts.push("board published " + fmtDay(pub, pub.getFullYear() !== year));
+      if (!isNaN(pub)) parts.push("published " + fmtDay(pub, pub.getFullYear() !== year));
     }
     const el = $("#checked");
     el.textContent = parts.join(" \u00B7 ").replace(/^./, (c) => c.toUpperCase());
@@ -772,6 +789,7 @@
     return [o.abbr, o.element, o.title, o.division, o.sid, (o.brings || []).join(" "), o.bringsText, o.gaps, o.says, o.action, o.notes, STATUS[o.status], o.statusNote].join(" ").toLowerCase();
   }
   const byDue = (x, y) => ((daysLeft(x) ?? 1e9) - (daysLeft(y) ?? 1e9)) || scoreOf(y) - scoreOf(x);
+  const isPassed = (o) => OPEN.has(o.status) && (daysLeft(o) ?? 0) < 0;
   const byScore = (x, y) => scoreOf(y) - scoreOf(x) || String(x.abbr || x.title).localeCompare(String(y.abbr || y.title));
 
   function renderOpps() {
@@ -799,24 +817,27 @@
     }
     const q = S.q.trim().toLowerCase();
     const vis = all.filter((o) => (S.fit === "all" || fitOf(scoreOf(o)).toLowerCase() === S.fit) && (!q || haystack(o).includes(q)));
-    const open = vis.filter((o) => OPEN.has(o.status)).sort(byDue);
+    const open = vis.filter((o) => OPEN.has(o.status) && !isPassed(o)).sort(byDue);
     const later = vis.filter((o) => LATER.has(o.status)).sort(byScore);
+    const passed = vis.filter(isPassed).sort((x, y) => (daysLeft(y) ?? 0) - (daysLeft(x) ?? 0));
     const arch = vis.filter((o) => !OPEN.has(o.status) && !LATER.has(o.status)).sort(byScore);
     out.push(lane("Open now", "Soonest deadline first", open, nodes, "No open calls match this filter."));
     out.push(lane("Expected and not yet released", "Highest score first", later, nodes, "No expected calls match this filter."));
-    if (arch.length) {
-      const d = h("details", { class: "lane", open: S.archOpen },
-        h("summary", { class: "lane-head" }, h("h2", null, "Archived", h("span", { class: "count", text: String(arch.length) })), h("span", { class: "lane-note", text: "Calls set aside or past their deadline" })),
-        h("div", { class: "list" }, arch.map((o) => oppRow(o, nodes))));
-      d.addEventListener("toggle", () => { S.archOpen = d.open; });
-      out.push(d);
-    }
+    if (passed.length) out.push(foldedLane("passedOpen", "Deadline passed", passed, nodes, E() ? "Set the next deadline, or archive the call" : "Open calls whose last deadline has gone by"));
+    if (arch.length) out.push(foldedLane("archOpen", "Archived", arch, nodes, "Calls set aside"));
     return out;
   }
   function lane(title, note, list, nodes, emptyText) {
     return h("section", { class: "lane" },
       h("div", { class: "lane-head" }, h("h2", null, title, h("span", { class: "count", text: String(list.length) })), h("p", { class: "lane-note", text: note })),
       list.length ? h("div", { class: "list" }, list.map((o) => oppRow(o, nodes))) : h("p", { class: "quiet-line", text: emptyText }));
+  }
+  function foldedLane(key, title, list, nodes, note) {
+    const d = h("details", { class: "lane", open: S[key] },
+      h("summary", { class: "lane-head" }, h("h2", null, title, h("span", { class: "count", text: String(list.length) })), h("span", { class: "lane-note", text: note })),
+      h("div", { class: "list" }, list.map((o) => oppRow(o, nodes))));
+    d.addEventListener("toggle", () => { S[key] = d.open; });
+    return d;
   }
 
   // To review
@@ -826,7 +847,7 @@
     const main = items.filter((it) => !it.letter || MAIN_LETTERS.has(it.letter));
     const other = items.filter((it) => it.letter && !MAIN_LETTERS.has(it.letter));
     const st = S.review.status || {};
-    const when = S.checking ? "Checking now" : S.review.checkedAt ? "Checked " + fmtDay(new Date(S.review.checkedAt), false) + " at " + fmtTime(S.review.checkedAt) : "";
+    const when = S.checking ? "Checking now" : S.review.checkedAt ? "Checked from this browser " + fmtDay(new Date(S.review.checkedAt), false) + " at " + fmtTime(S.review.checkedAt) : "";
     const statusLine = h("div", { class: "src-status" },
       st.nasa ? h("span", { class: st.nasa.ok ? null : "bad", text: st.nasa.ok ? "NASA's ROSES blog: read" : st.nasa.msg }) : null,
       st.gg ? h("span", { class: st.gg.ok ? null : "bad", text: st.gg.ok ? "Grants.gov: read" : st.gg.msg + " The NASA blog still covers ROSES." }) : null);
@@ -903,8 +924,14 @@
       h("span", { class: "date", text: fmtDay(d, d.getFullYear() !== todayLocal().getFullYear()) }));
   }
   function toggleOpp(id) {
-    if (S.expanded.has(id)) { S.expanded.delete(id); if (S.editingOpp === id) S.editingOpp = null; }
-    else S.expanded.add(id);
+    if (S.expanded.has(id)) {
+      S.expanded.delete(id);
+      if (S.editingOpp === id) S.editingOpp = null;
+      if ((location.hash || "") === "#call/" + id) setCallHash(null);
+    } else {
+      S.expanded.add(id);
+      setCallHash(id);
+    }
     renderOpps();
   }
   function gotoOpp(id) {
@@ -914,8 +941,10 @@
     S.fit = "all";
     const o = S.opps.get(id);
     if (o && o.status === "archived") S.archOpen = true;
+    if (o && isPassed(o)) S.passedOpen = true;
     S.expanded.add(id);
     S.flashOpp = id;
+    setCallHash(id);
     setTab("opportunities");
     renderOpps();
     requestAnimationFrame(() => { const el = document.getElementById("opp-" + id); if (el) el.scrollIntoView({ block: "center", behavior: "smooth" }); });
@@ -970,8 +999,86 @@
       o.notes ? fact("Notes", o.notes) : null,
       sources.length ? factNode("Sources", h("div", { class: "sources" }, sources.map((x) => h("a", { href: safeUrl(x.url), target: "_blank", rel: "noopener noreferrer", text: x.label || x.url })))) : null,
       o.sid ? factNode("Solicitation ID", h("p", { class: "mono", text: o.sid })) : null);
-    const side = h("div", { class: "side" }, scorer(o), E() ? proposalNode(o) : null, actionsNode(o));
+    const side = h("div", { class: "side" }, scorer(o), shareNode(o), E() ? proposalNode(o) : null, actionsNode(o));
     return h("div", { class: "opp-body" }, facts, side);
+  }
+
+  // ---------- links to a call, and calendar files ----------
+  const CALL_HASH = /^#call\/([\w-]{1,80})$/;
+  const linkFor = (id) => (IS_FILE ? BASE.site : siteUrl()) + "#call/" + id;
+  function setCallHash(id) {
+    const want = id ? "#call/" + id : "";
+    if ((location.hash || "") === want) return;
+    try { history.replaceState(null, "", location.pathname + location.search + want); } catch (e) { /* some browsers refuse this for saved copies */ }
+  }
+  function openFromHash() {
+    const m = CALL_HASH.exec(location.hash || "");
+    if (m && S.opps.has(m[1])) gotoOpp(m[1]);
+  }
+  function shareNode(o) {
+    const d = parseDay(o.due);
+    const upcoming = !!d && d >= todayLocal() && o.status !== "archived";
+    return h("div", { class: "actions share" },
+      h("button", { class: "btn", type: "button", "data-fk": "link:" + o.id, title: "Copy a link that opens this call", onclick: () => copyCallLink(o.id) }, "Copy link"),
+      upcoming ? h("button", { class: "btn", type: "button", "data-fk": "ics:" + o.id, title: "Save this deadline as a calendar event, with a reminder a week before",
+        onclick: () => downloadIcs([o], (o.abbr || "Call") + " deadline.ics") }, "Add to calendar") : null);
+  }
+  async function copyCallLink(id) {
+    setCallHash(id);
+    let ok = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(linkFor(id)); ok = true; }
+    } catch (e) { ok = false; }
+    toast(ok ? "Link copied. It opens this call for whoever you send it to." : "Couldn't copy here; the link to this call is in the address bar.");
+  }
+  function upcomingDeadlines() {
+    const today = todayLocal();
+    return [...S.opps].map(([id, o]) => Object.assign({ id }, o))
+      .filter((o) => o.status !== "archived" && parseDay(o.due) && parseDay(o.due) >= today)
+      .sort(byDue);
+  }
+  const icsText = (s) => String(s || "").replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  function icsFold(line) {
+    const enc = new TextEncoder();
+    const out = [];
+    let cur = "";
+    let bytes = 0;
+    for (const ch of line) {
+      const n = enc.encode(ch).length;
+      if (bytes + n > 74) { out.push(cur); cur = " " + ch; bytes = 1 + n; } else { cur += ch; bytes += n; }
+    }
+    out.push(cur);
+    return out.join("\r\n");
+  }
+  function icsFor(list) {
+    const ymd = (d) => isoDay(d).replace(/-/g, "");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//PSPL Proposer//Deadlines//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:PSPL Proposer deadlines"];
+    for (const o of list) {
+      const d = parseDay(o.due);
+      if (!d) continue;
+      const label = str(o.dueLabel, 90);
+      const s = scoreOf(o);
+      lines.push("BEGIN:VEVENT", "UID:" + o.id + "-" + ymd(d) + "@pspl-proposer", "DTSTAMP:" + stamp,
+        "DTSTART;VALUE=DATE:" + ymd(d), "DTEND;VALUE=DATE:" + ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)),
+        "SUMMARY:" + icsText((o.abbr || "Call") + " due" + (label ? ": " + label : "")),
+        "DESCRIPTION:" + icsText([o.title, o.element, "Fit: " + fitOf(s) + " (" + s + " of 8)", linkFor(o.id)].filter(Boolean).join("\n")),
+        "URL:" + linkFor(o.id), "TRANSP:TRANSPARENT",
+        "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsText((o.abbr || "Call") + " is due in a week"), "TRIGGER:-P7D", "END:VALARM",
+        "END:VEVENT");
+    }
+    lines.push("END:VCALENDAR");
+    return lines.map(icsFold).join("\r\n") + "\r\n";
+  }
+  function downloadIcs(list, name) {
+    downloadBlob(new Blob([icsFor(list)], { type: "text/calendar;charset=utf-8" }), name);
+    toast("Saved " + name + ". Open it to add " + plural(list.length, "deadline", "deadlines") + " to your calendar, each with a reminder a week before.");
+  }
+  function exportIcs() {
+    if (!S.loaded) return;
+    const list = upcomingDeadlines();
+    if (!list.length) { toast("There are no upcoming deadlines on the board."); return; }
+    downloadIcs(list, "PSPL deadlines " + isoDay(todayLocal()) + ".ics");
   }
 
   function bumpScore(id, key, delta) {
@@ -1351,12 +1458,12 @@
   function capsSorted() { return [...S.caps].map(([id, c]) => Object.assign({ id }, c)).sort((x, y) => capKey(x.id) - capKey(y.id) || byCode(x.id, y.id)); }
   function usageIndex() {
     const m = new Map();
-    const add = (k, v) => { if (!m.has(k)) m.set(k, []); if (!m.get(k).includes(v)) m.get(k).push(v); };
-    for (const o of S.opps.values()) {
+    const add = (k, id, tag) => { if (!m.has(k)) m.set(k, []); if (!m.get(k).some((x) => x.id === id)) m.get(k).push({ id, tag }); };
+    for (const [id, o] of S.opps) {
       if (o.status === "archived") continue;
       const tag = o.abbr || o.title || "Call";
-      for (const cid of o.brings || []) add(cid, tag);
-      for (const g of String(o.gaps || "").match(/\bG\d{1,3}\b/g) || []) add(g, tag);
+      for (const cid of o.brings || []) add(cid, id, tag);
+      for (const g of String(o.gaps || "").match(/\bG\d{1,3}\b/g) || []) add(g, id, tag);
     }
     return m;
   }
@@ -1413,12 +1520,15 @@
         h("div", { class: "cap-cat", text: gap ? "Known gap" + (c.category && c.category !== "Gap (inferred)" ? " \u00B7 " + c.category : "") : (c.category || "Capability") }),
         h("div", { class: "cap-name" }, c.name || "Unnamed", CH.caps[c.id] ? h("span", { class: "pill mine", text: "Changed here" }) : null),
         c.evidence ? h("p", { class: "cap-ev", text: c.evidence }) : null,
-        h("p", { class: "cap-used", text: u.length ? (gap ? "Flagged in: " : "Used by: ") + u.join(", ") : (gap ? "Not flagged in any call" : "Not used by any call yet") })),
+        u.length
+          ? h("p", { class: "cap-used" }, gap ? "Flagged in: " : "Used by: ", u.map((x, i) => [i ? ", " : "",
+            h("button", { class: "linklike", type: "button", "data-fk": "used:" + c.id + ":" + x.id, title: "Show this call", onclick: () => gotoOpp(x.id) }, x.tag)]))
+          : h("p", { class: "cap-used", text: gap ? "Not flagged in any call" : "Not used by any call yet" })),
       h("div", { class: "cap-side" },
         h("dl", { class: "kv" },
           h("dt", { text: "Maturity" }), h("dd", { text: c.maturity || "Not set" }),
           h("dt", { text: "Source" }), h("dd", null, sourceLink(c.source)),
-          h("dt", { text: "Owner" }), h("dd", { text: c.owner || "Not set" })),
+          c.owner ? [h("dt", { text: "Contact" }), h("dd", { text: c.owner })] : null),
         confirmed,
         E() ? h("div", null, h("button", { class: "btn ghost", type: "button", "data-fk": "cedit:" + c.id, onclick: () => { S.editingCap = c.id; renderCaps(); focusFirst("#cap-" + c.id + " form"); } }, "Edit")) : null));
     nodes.set(c.id, row);
@@ -1497,7 +1607,7 @@
         rows.push([o.abbr, o.element, o.title, o.division, o.sid, STATUS[o.status] || o.status, o.statusNote, o.due || "", o.dueLabel, daysLeft(o) ?? "", clampInt(o.a, 3), clampInt(o.r, 3), clampInt(o.t, 2), s, fitOf(s), (o.brings || []).join(" "), o.bringsText, o.gaps, o.says, o.action, o.notes, (o.sources || []).map((x) => x.url).join(" ")]);
       }
     } else {
-      rows = [["ID", "Type", "Category", "Capability", "Evidence", "Maturity", "Source", "Source link", "Owner", "Confirmed"]];
+      rows = [["ID", "Type", "Category", "Capability", "Evidence", "Maturity", "Source", "Source link", "Contact", "Confirmed"]];
       for (const c of capsSorted()) rows.push([c.id, c.kind === "gap" ? "Known gap" : "Capability", c.category, c.name, c.evidence, c.maturity, c.source && c.source.label, c.source && c.source.url, c.owner, c.confirmed ? "Yes" : "No"]);
     }
     const name = (kind === "opps" ? "PSPL calls " : "PSPL capabilities ") + isoDay(todayLocal()) + ".csv";
@@ -1547,6 +1657,8 @@
     $("#addCap").addEventListener("click", () => { if (!E()) return; S.addingCap = true; S.capQ = ""; $("#capSearch").value = ""; renderCaps(); focusFirst("#cap-new form"); });
     $("#exportOpps").addEventListener("click", () => exportCsv("opps"));
     $("#exportCaps").addEventListener("click", () => exportCsv("caps"));
+    $("#exportIcs").addEventListener("click", exportIcs);
+    window.addEventListener("hashchange", () => { if (S.loaded) openFromHash(); });
     $("#publishBtn").addEventListener("click", publishChanges);
     $("#editBtn").addEventListener("click", () => { if (S.loaded) setEditMode(!S.editMode); });
     $("#publishClose").addEventListener("click", () => { S.publish = null; resetPublishUi(); renderBand(); $("#publishBtn").focus(); });
@@ -1627,6 +1739,7 @@
     loadReview();
     rebuild();
     renderAll();
+    if (S.loaded) openFromHash();
   }
 
   init();

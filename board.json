@@ -1,8 +1,8 @@
 {
   "format": "pspl-proposer/1",
   "boardId": "pspl-proposer",
-  "app": "1.3.0",
-  "savedAt": "2026-10-24T04:03:03.959Z",
+  "app": "1.4.0",
+  "savedAt": "2026-10-24T07:08:54.000Z",
   "site": "https://mitchellshen.github.io/pspl-proposer/",
   "repo": "https://github.com/mitchellshen/pspl-proposer",
   "maintainer": "Mitchell Shen",
@@ -627,10 +627,10 @@
       "source": {
         "label": "Mitchell's notes"
       },
-      "owner": "",
+      "owner": "Mitchell Shen",
       "confirmed": false,
       "order": 10,
-      "updatedAt": "2026-10-23T22:28:32.000Z"
+      "updatedAt": "2026-10-24T07:08:54.000Z"
     },
     "C11": {
       "kind": "cap",
@@ -641,10 +641,10 @@
       "source": {
         "label": "Mitchell's notes (Oct 2026)"
       },
-      "owner": "",
+      "owner": "Mitchell Shen",
       "confirmed": false,
       "order": 11,
-      "updatedAt": "2026-10-23T22:28:32.000Z"
+      "updatedAt": "2026-10-24T07:08:54.000Z"
     },
     "C12": {
       "kind": "cap",
@@ -655,10 +655,10 @@
       "source": {
         "label": "Mitchell's notes (Oct 2026)"
       },
-      "owner": "",
+      "owner": "Mitchell Shen",
       "confirmed": false,
       "order": 12,
-      "updatedAt": "2026-10-23T22:28:32.000Z"
+      "updatedAt": "2026-10-24T07:08:54.000Z"
     },
     "C13": {
       "kind": "cap",
@@ -689,6 +689,156 @@
       "confirmed": true,
       "order": 14,
       "updatedAt": "2026-10-24T04:02:39.166Z"
+    },
+    "C15": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Solar wind turbulence and energetic-particle acceleration",
+      "evidence": "In situ solar wind turbulence and its radial evolution; energetic-particle acceleration at stream interaction regions; multi-spacecraft analysis (Parker Solar Probe, Solar Orbiter, ACE, STEREO).",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people"
+      },
+      "owner": "Manuel Cuesta, Ashok Silwal",
+      "confirmed": false,
+      "order": 15,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C16": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Energetic particles, radiation effects and Monte Carlo instrument modeling",
+      "evidence": "Energetic particle and plasma heliophysics; radiation-belt electrons; Geant4 Monte Carlo characterization of particle instruments, including a solid-state telescope on a NASA CubeSat (CIRBE); radiation effects.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people"
+      },
+      "owner": "Jamie Rankin, Lengying Khoo, Sungmin Pak",
+      "confirmed": false,
+      "order": 16,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C17": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Pickup ions at shocks and global ENA modeling",
+      "evidence": "Pickup-ion dynamics at shocks; ENA emission from the solar wind–interstellar medium interaction; termination-shock strength from IBEX ENAs using global models; IBEX analysis of solar-wind effects on the heliospheric boundary.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people"
+      },
+      "owner": "Bishwas Shrestha, Nehpreet Walia",
+      "confirmed": false,
+      "order": 17,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C18": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Kappa distributions and thermodynamics of space plasmas",
+      "evidence": "Generalized (non-equilibrium) thermodynamics and statistical mechanics of particle populations in space plasmas throughout the heliosphere; nonlinear dynamics.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people/george-livadiotis-phd"
+      },
+      "owner": "George Livadiotis",
+      "confirmed": false,
+      "order": 18,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C19": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Machine learning for heliophysics",
+      "evidence": "Machine-learning methods for heliophysics data, including visual recognition; earlier work at NASA Ames, Goddard and JPL.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people/spyros-kasapis-phd"
+      },
+      "owner": "Spyros Kasapis",
+      "confirmed": false,
+      "order": 19,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C20": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Solar wind dynamics, space weather and radio science",
+      "evidence": "Solar wind dynamics and their effects on near-Earth space, studied with radio-science techniques; space weather.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people/richa-jain-phd"
+      },
+      "owner": "Richa Jain",
+      "confirmed": false,
+      "order": 20,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C21": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Dust and plasma environments across the solar system",
+      "evidence": "Space plasma and cosmic dust from the Moon to the outer solar system (LADEE, Juno, New Horizons, Parker Solar Probe, IBEX, IMAP), including oxygen production at Europa's surface.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people/jamey-r-szalay-phd"
+      },
+      "owner": "Jamey Szalay",
+      "confirmed": false,
+      "order": 21,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C22": {
+      "kind": "cap",
+      "category": "Expertise",
+      "name": "Spaceborne time-of-flight mass spectrometry",
+      "evidence": "Time-of-flight mass spectrometry for heliophysics and planetary science; SWAPI analysis of the bulk solar wind, flares and coronal mass ejections, and pickup ions.",
+      "maturity": "Active research",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people/tyler-j-eddy"
+      },
+      "owner": "Tyler Eddy",
+      "confirmed": false,
+      "order": 22,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C23": {
+      "kind": "cap",
+      "category": "Team",
+      "name": "Science operations, data systems and research software",
+      "evidence": "Staff for IMAP science and mission operations and the IMAP science data system, plus research software engineers through Princeton Research Computing.",
+      "maturity": "Operational (IMAP)",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 23,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
+    },
+    "C24": {
+      "kind": "cap",
+      "category": "Team",
+      "name": "Instrument engineering, project management and contracts",
+      "evidence": "A space instrument engineer and a precision assembly specialist; the IMAP Phase E project manager; grants, contracts and subcontract administration; finance and procurement.",
+      "maturity": "Operational",
+      "source": {
+        "label": "Lab people page",
+        "url": "https://spacephysics.princeton.edu/people"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 24,
+      "updatedAt": "2026-10-24T07:08:54.000Z"
     },
     "G1": {
       "kind": "gap",

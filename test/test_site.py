@@ -16,7 +16,8 @@ import tempfile
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import quote
+from datetime import date
+from urllib.parse import parse_qs, quote, urlparse
 
 from playwright.sync_api import sync_playwright
 
@@ -36,6 +37,9 @@ for name in ("index.html", "app.js", "style.css", "board.json"):
 shutil.copytree(ROOT / "assets", work / "assets")
 SEED_TEXT = (ROOT / "board.json").read_text(encoding="utf-8")
 SEED = json.loads(SEED_TEXT)
+# Rows still to confirm, so a click on Confirmed ticks it (the board's confirmed rows change over time).
+UNCONFIRMED = sorted((k for k, c in SEED["caps"].items() if not c.get("confirmed")), key=lambda k: (k[0], int(k[1:])))
+ROW_A, ROW_B = UNCONFIRMED[0], UNCONFIRMED[1]
 
 
 class Quiet(SimpleHTTPRequestHandler):
@@ -84,23 +88,6 @@ GG = {"errorcode": 0, "data": {"hitCount": 2, "oppHits": [
 api = {"mode": "serve", "calls": 0, "accept": None}
 
 
-def banner_png():
-    from io import BytesIO
-    from PIL import Image, ImageDraw, ImageFont
-    img = Image.new("RGB", (2625, 300), (0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    try:
-        font = ImageFont.truetype("DejaVuSerif-Bold.ttf", 190)
-    except OSError:
-        font = ImageFont.load_default()
-    draw.text((40, 40), "Space Physics at Princeton", fill=(255, 255, 255), font=font)
-    buf = BytesIO()
-    img.save(buf, "PNG")
-    return buf.getvalue()
-
-
-BANNER = banner_png()
-BANNER_URL = "https://spacephysics.princeton.edu/sites/g/files/toruqf1376/files/spp_banner_alt.png"
 
 
 def json_reply(route, body, status=200):
@@ -109,8 +96,32 @@ def json_reply(route, body, status=200):
     route.fulfill(status=status, headers={**CORS, "Content-Type": "application/json"}, body=body if isinstance(body, str) else json.dumps(body))
 
 
+nasa_log, gg_log = [], []
+
+
 def nasa(route):
-    json_reply(route, BLOG if "slug=" in route.request.url else POSTS)
+    """Behaves like WordPress: honours include, modified_after and _fields."""
+    url = route.request.url
+    nasa_log.append(url)
+    q = parse_qs(urlparse(url).query)
+    if "slug" in q:
+        return json_reply(route, BLOG)
+    posts = POSTS
+    if "include" in q:
+        ids = {int(x) for x in q["include"][0].split(",")}
+        posts = [x for x in posts if x["id"] in ids]
+    if "modified_after" in q:
+        posts = [x for x in posts if x["modified"] >= q["modified_after"][0]]
+    if "_fields" in q:
+        keep = set(q["_fields"][0].split(","))
+        posts = [{k: v for k, v in x.items() if k in keep} for x in posts]
+    json_reply(route, posts)
+
+
+def grants(route):
+    if route.request.method != "OPTIONS":
+        gg_log.append(route.request.headers.get("content-type", ""))
+    json_reply(route, GG)
 
 
 def github_api(route):
@@ -149,13 +160,12 @@ with sync_playwright() as p:
         ctx.route("https://fonts.googleapis.com/**", lambda r: r.abort())
         ctx.route("https://fonts.gstatic.com/**", lambda r: r.abort())
         ctx.route("https://science.nasa.gov/**", nasa)
-        ctx.route("https://api.grants.gov/**", lambda r: json_reply(r, GG))
+        ctx.route("https://api.grants.gov/**", grants)
         ctx.route(API_PREFIX + "**", github_api)
         ctx.route(SITE_URL + "board.json**", pages_copy)
-        # Playwright tries the most recently added route first, so the banner goes after the catch-all.
         ctx.route("https://spacephysics.princeton.edu/**", lambda r: r.abort())
-        if banner:
-            ctx.route(BANNER_URL, lambda r: r.fulfill(status=200, headers={"Content-Type": "image/png"}, body=BANNER))
+        if not banner:
+            ctx.route(BASE + "assets/spp-banner.png", lambda r: r.abort())
         return ctx
 
     def open_page(ctx, url=BASE, tag="page"):
@@ -176,7 +186,8 @@ with sync_playwright() as p:
     pg.wait_for_selector("#lanes .opp")
     check(pg.title() == "PSPL Proposer", "page title")
     pg.wait_for_function("document.querySelector('.lab-banner img').complete")
-    check(pg.evaluate("document.querySelector('.lab-banner img').naturalWidth") == 2625 and pg.is_hidden(".lab-name"), "the lab banner shows in the header")
+    check(pg.evaluate("document.querySelector('.lab-banner img').naturalWidth") == 793 and pg.is_hidden(".lab-name"), "the lab banner shows in the header, from the repo")
+    check(pg.inner_text("#checked").startswith("Last NASA review"), "the header says when the board was last reviewed against NASA")
     pg.wait_for_function("document.querySelector('.lab-logo').complete")
     check(pg.evaluate("document.querySelector('.lab-logo').naturalWidth") > 0 and pg.is_visible(".lab-logo"), "the lab logo shows next to the title")
     nob = new_ctx(banner=False)
@@ -192,7 +203,8 @@ with sync_playwright() as p:
     body = pg.locator("#lanes .opp.is-open .opp-body")
     check(body.locator(".stepper button").count() == 0, "no score buttons in view mode")
     check(body.locator(".stepper.readonly output").count() == 3, "scores shown read-only")
-    check(body.locator(".actions").count() == 0, "no Edit, Rescore, Archive or Delete in view mode")
+    check(body.locator(".actions:not(.share)").count() == 0, "no Edit, Rescore, Archive or Delete in view mode")
+    check(body.locator(".actions.share").get_by_role("button", name="Copy link").count() == 1, "every open call offers Copy link")
     pg.click("#tab-capabilities")
     check(pg.locator("#capList input[type=checkbox]").count() == 0, "no Confirmed checkboxes in view mode")
     check(pg.locator("#capList .confirm-text").count() == len(SEED["caps"]), "each capability row shows whether it's confirmed")
@@ -204,6 +216,12 @@ with sync_playwright() as p:
     check(rv.locator(".view-hint").count() == 1, "To review explains what to do in view mode")
     check(rv.get_by_role("button", name="Add to board").count() == 0 and rv.get_by_role("button", name="Mark reviewed").count() == 0, "no review actions in view mode")
     check("Grants.gov: read" in rv.locator(".src-status").inner_text(), "both sources read")
+    lists = [u for u in nasa_log if "parent=" in u]
+    check(bool(lists) and all("_fields=" in u and "modified_after=" in u for u in lists), "the NASA listing asks only for recent posts, without their bodies")
+    bodies = [u for u in nasa_log if "include=" in u]
+    check(len(bodies) == 1 and "1500001" in bodies[0] and "1500002" in bodies[0], "post bodies are fetched only for posts still to review")
+    check(bool(rv.locator(".rv").filter(has_text="B.9 Heliophysics Example").locator("ul.rv-sent li").count()), "due-date lines still come through")
+    check(bool(gg_log) and gg_log[0].startswith("text/plain"), "Grants.gov is asked with a simple request first")
     stored = json.loads(pg.evaluate(f"localStorage.getItem('{K_CHANGES}')") or "{}")
     check(not (stored.get("meta") or {}).get("checkedOn") and pg.is_hidden("#changesBand"), "checking NASA in view mode leaves nothing to publish")
     pg.screenshot(path=str(OUT / "view-desktop.png"), full_page=True)
@@ -220,8 +238,8 @@ with sync_playwright() as p:
     check("1 call" in band(pg) and "Nobody else sees it" in band(pg), "one changed call shows in the gold band")
     check(card.locator(".pill.mine").count() == 1, "the changed call is marked Changed here")
     pg.click("#tab-capabilities")
-    pg.click("#cf-C8")
-    check(pg.is_checked("#cf-C8") and "1 call, 1 capability row" in band(pg), "confirming a capability adds to the band")
+    pg.click("#cf-" + ROW_A)
+    check(pg.is_checked("#cf-" + ROW_A) and "1 call, 1 capability row" in band(pg), "confirming a capability adds to the band")
     pg.click("#tab-opportunities")
     pg.locator(".lane.review .rv").filter(has_text="B.9 Heliophysics Example").get_by_role("button", name="Mark reviewed").click()
     check("1 NASA post reviewed" in band(pg), "a reviewed NASA post counts as a change")
@@ -239,7 +257,7 @@ with sync_playwright() as p:
     text = pg.evaluate("navigator.clipboard.readText()")
     data = json.loads(text)
     check(data["opps"]["next-hlcas"]["a"] == a1, "published board has the new score")
-    check(data["caps"]["C8"]["confirmed"] is True, "published board has the confirmed capability")
+    check(data["caps"][ROW_A]["confirmed"] is True, "published board has the confirmed capability")
     check("wp:1500001" in data["nasa"]["reviewed"], "published board records the reviewed NASA post")
     check(data["checkedOn"] == SEED["checkedOn"] and data["checkNote"] == SEED["checkNote"], "a NASA check in view mode doesn't change the published note")
     check(check_board.canonical(data) == text, "published board.json is in the canonical layout")
@@ -285,7 +303,7 @@ with sync_playwright() as p:
     # 5. GitHub's API is unavailable: publish falls back to the site's copy.
     api["mode"] = "fail"
     pg.click("#tab-capabilities")
-    pg.click("#cf-C3")
+    pg.click("#cf-" + ROW_B)
     pg.click("#publishBtn")
     pg.wait_for_selector("#publishPanel:not([hidden])")
     check(pg.is_visible("#publishSteps") and "couldn't be read" not in pg.inner_text("#publishSummary"), "publish still works from the site's copy when GitHub's API refuses")
@@ -304,14 +322,14 @@ with sync_playwright() as p:
     pg.wait_for_selector("#publishPanel:not([hidden])")
     pg.click("#copyBoardBtn")
     check(pg.is_visible("#publishText") and "blocked" in pg.inner_text("#copyMsg"), "blocked clipboard falls back to selected text")
-    check(json.loads(pg.input_value("#publishText"))["caps"]["C3"]["confirmed"] is True, "the selectable text is the new board")
+    check(json.loads(pg.input_value("#publishText"))["caps"][ROW_B]["confirmed"] is True, "the selectable text is the new board")
 
     # 7. Discard.
     pg.click("#discardBtn")
     pg.click("#discardBtn")
     check(pg.is_hidden("#changesBand"), "Discard my changes clears the band")
     pg.click("#tab-capabilities")
-    check(pg.is_checked("#cf-C3") == bool(SEED["caps"]["C3"]["confirmed"]), "discarded change is gone")
+    check(pg.is_checked("#cf-" + ROW_B) == bool(SEED["caps"][ROW_B]["confirmed"]), "discarded change is gone")
 
     # 8. Add a call from a NASA post, in edit mode.
     pg.click("#tab-opportunities")
@@ -325,6 +343,50 @@ with sync_playwright() as p:
     check(pg.locator(".lane.review .rv").filter(has_text="Lunar Example").count() == 0, "the post leaves To review once added")
     pg.click("#discardBtn")
     pg.click("#discardBtn")
+
+    # 8b. Links to a call, calendar files and the register's links.
+    lk = new_ctx()
+    lk.grant_permissions(["clipboard-read", "clipboard-write"], origin=BASE.rstrip("/"))
+    pl2 = open_page(lk, BASE + "#call/r25-b8-ssf", tag="links")
+    loaded(pl2)
+    pl2.wait_for_selector("#opp-r25-b8-ssf.is-open")
+    check(pl2.get_attribute("#opp-r25-b8-ssf .opp-head", "aria-expanded") == "true", "a link to a call opens that call")
+    pl2.locator("#opp-r25-b8-ssf").get_by_role("button", name="Copy link").click()
+    pl2.wait_for_function("navigator.clipboard.readText().then(t => t.length > 0)")
+    check(pl2.evaluate("navigator.clipboard.readText()") == BASE + "#call/r25-b8-ssf", "Copy link copies the call's address")
+    pl2.locator("#opp-r25-c2-sss .opp-head").click()
+    check(pl2.evaluate("location.hash") == "#call/r25-c2-sss", "opening another call updates the address")
+    with pl2.expect_download() as dl:
+        pl2.click("#exportIcs")
+    ics = Path(dl.value.path()).read_bytes().decode("utf-8")
+    today = date.today().isoformat()
+    upcoming = [k for k, o in SEED["opps"].items() if o.get("status") != "archived" and o.get("due") and o["due"] >= today]
+    lines = ics.split("\r\n")
+    check(ics.startswith("BEGIN:VCALENDAR\r\n") and ics.count("BEGIN:VEVENT") == len(upcoming) and len(upcoming) > 0, f"the calendar file has one event per upcoming deadline ({len(upcoming)})")
+    check(all(len(x.encode("utf-8")) <= 75 for x in lines) and "TRIGGER:-P7D" in ics and ("URL:" + BASE + "#call/") in ics.replace("\r\n ", ""), "calendar lines are folded, with reminders and links back to each call")
+    with pl2.expect_download() as dl:
+        pl2.locator("#opp-r25-c2-sss").get_by_role("button", name="Add to calendar").click()
+    one = Path(dl.value.path()).read_bytes().decode("utf-8")
+    check(one.count("BEGIN:VEVENT") == 1 and "SUMMARY:SSS due" in one.replace("\r\n ", ""), "a single call's deadline can be saved too")
+    pl2.click("#tab-capabilities")
+    check(pl2.locator("#cap-C1 dt", has_text="Contact").count() == 0 and pl2.locator("#cap-C15 dt", has_text="Contact").count() == 1, "contacts show only where they're set")
+    first = pl2.locator("#cap-C1 .cap-used button").first
+    target = first.inner_text()
+    first.click()
+    check(pl2.get_attribute("#tab-opportunities", "aria-selected") == "true" and pl2.locator(".opp.is-open .abbr", has_text=target).count() >= 1, "Used by links open the call")
+
+    # 8c. Calls whose deadline has passed move out of Open now.
+    later2 = new_ctx()
+    pz = later2.new_page()
+    pz.on("pageerror", lambda e: errors.append(f"passed: {e}"))
+    pz.clock.set_fixed_time("2026-11-15T12:00:00")
+    pz.goto(BASE)
+    loaded(pz)
+    gone = sorted(k for k, o in SEED["opps"].items() if o.get("status") in ("open", "step2") and o.get("due") and o["due"] < "2026-11-15")
+    lane_txt = pz.locator("details.lane", has_text="Deadline passed")
+    check(len(gone) > 0 and lane_txt.count() == 1 and lane_txt.locator(".opp").count() == len(gone), f"calls past their deadline sit under Deadline passed ({len(gone)})")
+    open_sec = pz.locator("section.lane", has_text="Open now")
+    check(all(open_sec.locator("#opp-" + k).count() == 0 for k in gone), "and leave Open now")
 
     # 9. Phone width, view and edit with the publish steps open.
     phone = new_ctx(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
