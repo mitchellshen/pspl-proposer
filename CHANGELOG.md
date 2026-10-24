@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1 (2026-10-24)
+
+- The header buttons stay on the right when they wrap onto their own line on medium-width screens.
+
 ## 1.3.0 (2026-10-24)
 
 - The Space Physics at Princeton logo next to the title, and as the browser tab and home-screen icon.

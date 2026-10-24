@@ -93,7 +93,7 @@ a:hover { text-decoration-thickness: 2px; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--step-3); letter-spacing: 0; line-height: 1.1; }
 .masthead h1::after { content: ""; display: block; width: 50px; height: 3px; background: var(--accent); margin-top: 10px; }
 .sub { margin-top: 10px; color: var(--head-muted); font-size: var(--step--1); max-width: 62ch; }
-.mast-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px 12px; flex-wrap: wrap; max-width: 390px; }
+.mast-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px 12px; flex-wrap: wrap; max-width: 390px; margin-left: auto; }
 .checked { order: 2; flex-basis: 100%; text-align: right; color: var(--head-muted); font-size: 0.75rem; }
 .checked.live { color: var(--head-accent); }
 .checked.live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 7px; vertical-align: 1px; animation: pulse 1.2s ease-in-out infinite; }
@@ -338,7 +338,7 @@ p.rv-sent { margin-top: 8px; color: var(--muted); font-size: var(--step--1); max
   .lab-banner img { height: 34px; }
   .lab-logo { height: 64px; }
   .brand { gap: 12px; }
-  .mast-actions { justify-content: flex-start; }
+  .mast-actions { justify-content: flex-start; margin-left: 0; }
   .checked { text-align: left; }
 }
 @media (max-width: 640px) {
