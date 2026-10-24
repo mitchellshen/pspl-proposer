@@ -33,6 +33,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix="pspl-site-"))
 for name in ("index.html", "app.js", "style.css", "board.json"):
     shutil.copy(ROOT / name, work / name)
+shutil.copytree(ROOT / "assets", work / "assets")
 SEED_TEXT = (ROOT / "board.json").read_text(encoding="utf-8")
 SEED = json.loads(SEED_TEXT)
 
@@ -176,6 +177,8 @@ with sync_playwright() as p:
     check(pg.title() == "PSPL Proposer", "page title")
     pg.wait_for_function("document.querySelector('.lab-banner img').complete")
     check(pg.evaluate("document.querySelector('.lab-banner img').naturalWidth") == 2625 and pg.is_hidden(".lab-name"), "the lab banner shows in the header")
+    pg.wait_for_function("document.querySelector('.lab-logo').complete")
+    check(pg.evaluate("document.querySelector('.lab-logo').naturalWidth") > 0 and pg.is_visible(".lab-logo"), "the lab logo shows next to the title")
     nob = new_ctx(banner=False)
     pb = open_page(nob, tag="no banner")
     loaded(pb)

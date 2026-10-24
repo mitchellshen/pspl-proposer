@@ -6,12 +6,13 @@
 <meta name="robots" content="noindex, nofollow">
 <title>PSPL Proposer</title>
 <meta name="description" content="NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23121212'/%3E%3Crect y='0' width='32' height='4' fill='%23E77500'/%3E%3Ctext x='16' y='24' font-family='Arial,sans-serif' font-size='18' font-weight='700' text-anchor='middle' fill='%23E77500'%3EP%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="assets/spp-icon-64.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css?v=1.2.0">
-<script src="app.js?v=1.2.0" defer></script>
+<link rel="stylesheet" href="style.css?v=1.3.0">
+<script src="app.js?v=1.3.0" defer></script>
 </head>
 <body>
 <template id="app-shell">
@@ -25,8 +26,11 @@
     </div>
     <div class="mast">
       <div class="brand">
-        <h1>PSPL Proposer</h1>
-        <p class="sub">NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.</p>
+        <img class="lab-logo" src="assets/spp-logo.png" alt="Space Physics at Princeton logo" width="114" height="88" onerror="this.hidden = true;">
+        <div class="brand-text">
+          <h1>PSPL Proposer</h1>
+          <p class="sub">NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.</p>
+        </div>
       </div>
       <div class="mast-actions">
         <span class="checked mono" id="checked"></span>
@@ -66,7 +70,7 @@
       <ol class="steps" id="publishSteps">
         <li><div class="step-body"><button class="btn primary" id="copyBoardBtn" type="button">Copy the new board</button><span class="help" id="copyMsg" role="status"></span></div></li>
         <li><div class="step-body"><a class="btn" id="editLink" href="#" target="_blank" rel="noopener noreferrer">Open board.json on GitHub</a><p>Sign in if GitHub asks. Click into the file, select everything (Ctrl+A, or Cmd+A on a Mac) and paste over it.</p></div></li>
-        <li><div class="step-body"><p>Choose <b>Commit changes</b> and add a short note on what you changed. The site updates within a few minutes; reload this page then and this band clears.</p></div></li>
+        <li><div class="step-body"><p>Choose <b>Commit changes</b> and add a short note on what you changed. If GitHub offers <b>Propose changes</b> instead, you haven't been added to the repository, and your edit goes to the maintainer to approve. The site updates a few minutes after the commit; reload this page then and this band clears.</p></div></li>
       </ol>
       <label class="sr" for="publishText">The new board.json</label>
       <textarea id="publishText" rows="5" readonly hidden></textarea>
@@ -151,12 +155,13 @@
         <h2>One board for the lab</h2>
         <p>Everyone opens the same page, <a id="siteLink" href="https://mitchellshen.github.io/pspl-proposer/">mitchellshen.github.io/pspl-proposer</a>, in Edge, Chrome, Safari or Firefox on Windows or Mac. There's nothing to install and no account to make. Bookmark the page rather than saving a copy, so you always see the latest board.</p>
         <p>The board itself is one file, board.json, in the board's GitHub repository. Every published change is a commit there, so there's a full history of who changed what and when, and any change can be undone.</p>
-        <h2>Changing the board</h2>
+        <h2>Who can change the board</h2>
+        <p>Anyone can choose Edit and try changes, including correcting or confirming capabilities, but those changes stay in their own browser. Nothing reaches the shared board until it's committed to board.json on GitHub, and only people added to the board's repository can commit. Everyone else's changes go to <span id="maintainerInline">whoever looks after the board</span> to approve.</p>
         <ol>
           <li>Choose Edit at the top. It applies to this browser only, and you can turn it off the same way.</li>
-          <li>Correct capabilities, adjust scores, add calls and review new NASA posts. Your changes stay in this browser, counted in the gold band at the top, until you publish them.</li>
-          <li>Choose Publish changes in the gold band and follow its three steps: copy the new board, paste it over board.json on GitHub, and commit. You need a GitHub account that has been added to the board's repository.</li>
-          <li>No GitHub access? Download board.json from the same band and send it to <span id="maintainerInline">whoever looks after the board</span>.</li>
+          <li>Correct capabilities, adjust scores, add calls and review new NASA posts. Your changes stay in this browser, counted in the orange band at the top, until you publish them.</li>
+          <li>Choose Publish changes in the band and follow its three steps: copy the new board, paste it over board.json on GitHub, and commit.</li>
+          <li>Not added to the repository? GitHub offers Propose changes instead of Commit changes, which sends your edit for approval. Or download board.json from the band and send it on.</li>
         </ol>
         <p>The board is public, so anyone with the address can read it. Keep budgets, proposal plans that aren't public yet and reviewer comments off the board.</p>
         <div class="settings" id="maintainerBox" hidden>

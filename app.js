@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "1.2.0";
+  const APP_VERSION = "1.3.0";
   const BOARD_ID = "pspl-proposer";
   const DEFAULT_SITE = "https://mitchellshen.github.io/pspl-proposer/";
   const DEFAULT_REPO = "https://github.com/mitchellshen/pspl-proposer";

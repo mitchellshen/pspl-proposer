@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 (2026-10-24)
+
+- The Space Physics at Princeton logo next to the title, and as the browser tab and home-screen icon.
+- How it works and the publish steps now say who can change the board: anyone can try changes in their own browser, only people added to the repository can commit, and everyone else's changes go to the maintainer to approve.
+
 ## 1.2.0 (2026-10-23)
 
 - Styled after Space Physics at Princeton: the lab's banner in a black header with the Princeton-orange rule, a charcoal section bar with an orange marker, Montserrat headings with the short orange bar, Roboto text and a matching footer.

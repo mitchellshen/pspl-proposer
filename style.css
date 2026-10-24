@@ -87,12 +87,14 @@ a:hover { text-decoration-thickness: 2px; }
 .lab-banner img { display: block; height: 44px; width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
 .lab-name { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: 0.01em; }
 .mast { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; margin-top: 16px; }
-.brand { min-width: 0; }
+.brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.brand-text { min-width: 0; }
+.lab-logo { flex: none; display: block; width: auto; height: 88px; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--step-3); letter-spacing: 0; line-height: 1.1; }
 .masthead h1::after { content: ""; display: block; width: 50px; height: 3px; background: var(--accent); margin-top: 10px; }
 .sub { margin-top: 10px; color: var(--head-muted); font-size: var(--step--1); max-width: 62ch; }
-.mast-actions { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; }
-.checked { color: var(--head-muted); font-size: 0.75rem; }
+.mast-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px 12px; flex-wrap: wrap; max-width: 390px; }
+.checked { order: 2; flex-basis: 100%; text-align: right; color: var(--head-muted); font-size: 0.75rem; }
 .checked.live { color: var(--head-accent); }
 .checked.live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 7px; vertical-align: 1px; animation: pulse 1.2s ease-in-out infinite; }
 .masthead .btn { background: transparent; color: var(--head-ink); border-color: rgb(255 255 255 / 45%); }
@@ -334,6 +336,10 @@ p.rv-sent { margin-top: 8px; color: var(--muted); font-size: var(--step--1); max
   .rv-actions { flex-direction: row; flex-wrap: wrap; }
   h1 { font-size: 1.6rem; }
   .lab-banner img { height: 34px; }
+  .lab-logo { height: 64px; }
+  .brand { gap: 12px; }
+  .mast-actions { justify-content: flex-start; }
+  .checked { text-align: left; }
 }
 @media (max-width: 640px) {
   .form { grid-template-columns: minmax(0, 1fr); }

@@ -12,11 +12,17 @@ The whole board (the calls, their scores and the lab's capability register) live
 
 Bookmark the page rather than saving a copy. A saved copy still loads the latest board from the site and says it's a copy.
 
+## Who can change the board
+
+Anyone can choose **Edit** on the page and try changes, including correcting or confirming capabilities, but those changes stay in their own browser. Nothing reaches the shared board until it's committed to `board.json` here, and only the owner and the collaborators they add (**Settings → Collaborators**) can commit. Anyone else who publishes gets GitHub's **Propose changes** instead, which opens a pull request for the owner to approve, or they can download `board.json` and send it on.
+
+To review even collaborators' changes before they go live, add a ruleset for `main` that requires a pull request (**Settings → Rulesets**).
+
 ## Changing the board
 
 1. Open the board and choose **Edit** at the top. Edit mode applies to that browser only.
 2. Make your changes. They stay in your browser, counted in a gold band at the top, until you publish them.
-3. Choose **Publish changes** and follow its three steps: copy the new board, open `board.json` here on GitHub, select everything and paste over it, then commit. This needs a GitHub account with write access to this repository.
+3. Choose **Publish changes** and follow its three steps: copy the new board, open `board.json` here on GitHub, select everything and paste over it, then commit (or propose the change, without write access).
 4. The site picks up the commit within a few minutes.
 
 No write access? Choose **Download board.json** in the same band and send the file to whoever looks after the board.
@@ -36,6 +42,7 @@ The site is public: anyone with the address can read the board. Keep budgets, pr
 | File | What it is |
 | --- | --- |
 | `index.html`, `app.js`, `style.css` | The page. Plain HTML, JavaScript and CSS with no build step. |
+| `assets/` | The Space Physics at Princeton logo and icons. |
 | `board.json` | The board: calls, scores, the capability register and the NASA posts already reviewed. |
 | `tools/check_board.py` | Checks `board.json`; `--format` tidies a hand-edited file into the layout the page writes. |
 | `test/test_site.py` | Browser tests (view and edit mode, publishing, conflicts, saved copies, a broken board, phone width). |
