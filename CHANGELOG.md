@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 (2026-10-23)
+
+- Styled after Space Physics at Princeton: the lab's banner in a black header with the Princeton-orange rule, a charcoal section bar with an orange marker, Montserrat headings with the short orange bar, Roboto text and a matching footer.
+- The calibration facility rows (C4 to C6) now follow the lab's calibration-system page, and a new row, C14, covers the facility's control system and 1 Hz logging.
+
 ## 1.1.0 (2026-10-23)
 
 - One shared board on GitHub Pages. The board moved into `board.json` in this repository, so every change is a commit with a history.

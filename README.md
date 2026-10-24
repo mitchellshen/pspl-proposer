@@ -25,7 +25,7 @@ Publishing starts from the latest committed `board.json` and only adds what you 
 
 Small fixes can also be made directly in `board.json` on GitHub. The **Check board.json** action checks every commit; if a commit breaks the file, people who visited before see their last good copy, new visitors see a message, and reverting the commit fixes it.
 
-The repository and the site are public. Keep budgets, proposal plans that aren't public yet and reviewer comments off the board.
+The site is public: anyone with the address can read the board. Keep budgets, proposal plans that aren't public yet and reviewer comments off the board.
 
 ## Checking NASA
 

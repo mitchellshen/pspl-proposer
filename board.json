@@ -1,8 +1,8 @@
 {
   "format": "pspl-proposer/1",
   "boardId": "pspl-proposer",
-  "app": "1.1.0",
-  "savedAt": "2026-10-23T22:28:32.000Z",
+  "app": "1.2.0",
+  "savedAt": "2026-10-24T03:42:33.000Z",
   "site": "https://mitchellshen.github.io/pspl-proposer/",
   "repo": "https://github.com/mitchellshen/pspl-proposer",
   "maintainer": "Mitchell Shen",
@@ -535,45 +535,46 @@
       "kind": "cap",
       "category": "Facility",
       "name": "Ion and neutral beamline test and calibration facility",
-      "evidence": "Multi-species beam, 0.1–30 keV; used to test and calibrate SWAPI, IMAP-Lo and CoDICE.",
+      "evidence": "Electron-impact ion source from about 100 eV to 30 keV, stable to within 10% over a day. A Wien filter selects H⁺, D⁺, He⁺, N₂⁺, Ne⁺, Ar⁺ and water-group ions, and a charge-exchange vessel with a precision nitrogen leak makes neutral beams. The 16 ft beamline expands the beam to about 60 mm, with 1, 3, 6 and 14 mm collimators and a Helmholtz coil that cancels Earth's field or dumps ions. Calibrated IMAP/SWAPI and IMAP-Lo, and cross-calibrated SWAPI with CoDICE.",
       "maturity": "Operational",
       "source": {
-        "label": "Space Physics Lab document",
-        "url": "https://spacephysics.princeton.edu/document/332"
+        "label": "PSPL calibration system page",
+        "url": "https://spacephysics.princeton.edu/cal-system-intro"
       },
       "owner": "",
       "confirmed": false,
       "order": 4,
-      "updatedAt": "2026-10-22T21:30:00Z"
+      "updatedAt": "2026-10-24T03:42:33.000Z"
     },
     "C5": {
       "kind": "cap",
       "category": "Facility",
       "name": "Cleanroom and vacuum chambers",
-      "evidence": "Flight-hardware assembly and test (SWAPI).",
+      "evidence": "The 4 ft Main Chamber and the Science Chamber run at about 10⁻⁸–10⁻⁹ torr, watched by residual gas analyzers, and open into an ISO 7 (Class 10,000) cleanroom. Used for SWAPI flight-hardware assembly and test.",
       "maturity": "Operational",
       "source": {
-        "label": "Daily Princetonian (Sep 2025)",
-        "url": "https://www.dailyprincetonian.com/article/2025/09/princeton-news-broadfocus-nasa-princeton-imap-launch-spacex-mission-david-mccomas"
+        "label": "PSPL calibration system page",
+        "url": "https://spacephysics.princeton.edu/cal-system-intro"
       },
       "owner": "",
       "confirmed": false,
       "order": 5,
-      "updatedAt": "2026-10-22T21:30:00Z"
+      "updatedAt": "2026-10-24T03:42:33.000Z"
     },
     "C6": {
       "kind": "cap",
       "category": "Lab diagnostics",
-      "name": "Beam characterization: RPA (energy and resolution), carbon-foil ABM (flux), imaging MCP (uniformity)",
-      "evidence": "RPA in design; ABM and MCP plan set for SWAPI EM+ calibration.",
-      "maturity": "In development",
+      "name": "Beam monitors and characterization: MCP, absolute beam monitors, CEM, Faraday cup with RPA",
+      "evidence": "On the beamline: an MCP, a carbon-foil and a conversion-surface absolute beam monitor (ABM), a channel electron multiplier (CEM), and a Faraday cup with retarding-potential (RPA) capability up to 5 kV. A dedicated RPA for beam energy and resolution is in design, and ABM and MCP characterization is set for the SWAPI EM+ calibration.",
+      "maturity": "Operational; dedicated RPA in development",
       "source": {
-        "label": "Mitchell's notes (Oct 2026)"
+        "label": "PSPL calibration system page; Mitchell's notes (Oct 2026)",
+        "url": "https://spacephysics.princeton.edu/cal-system-intro"
       },
       "owner": "",
       "confirmed": false,
       "order": 6,
-      "updatedAt": "2026-10-23T22:28:32.000Z"
+      "updatedAt": "2026-10-24T03:42:33.000Z"
     },
     "C7": {
       "kind": "cap",
@@ -673,6 +674,21 @@
       "confirmed": false,
       "order": 13,
       "updatedAt": "2026-10-22T21:30:00Z"
+    },
+    "C14": {
+      "kind": "cap",
+      "category": "Facility",
+      "name": "Calibration control system and data logging",
+      "evidence": "Valve states, pressures, cryopump temperatures, turbo-pump speeds and positioner locations are logged at about 1 Hz to a local database and shared with instrument teams.",
+      "maturity": "Operational",
+      "source": {
+        "label": "PSPL calibration system page",
+        "url": "https://spacephysics.princeton.edu/cal-system-intro"
+      },
+      "owner": "",
+      "confirmed": false,
+      "order": 14,
+      "updatedAt": "2026-10-24T03:42:33.000Z"
     },
     "G1": {
       "kind": "gap",

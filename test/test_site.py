@@ -83,6 +83,25 @@ GG = {"errorcode": 0, "data": {"hitCount": 2, "oppHits": [
 api = {"mode": "serve", "calls": 0, "accept": None}
 
 
+def banner_png():
+    from io import BytesIO
+    from PIL import Image, ImageDraw, ImageFont
+    img = Image.new("RGB", (2625, 300), (0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("DejaVuSerif-Bold.ttf", 190)
+    except OSError:
+        font = ImageFont.load_default()
+    draw.text((40, 40), "Space Physics at Princeton", fill=(255, 255, 255), font=font)
+    buf = BytesIO()
+    img.save(buf, "PNG")
+    return buf.getvalue()
+
+
+BANNER = banner_png()
+BANNER_URL = "https://spacephysics.princeton.edu/sites/g/files/toruqf1376/files/spp_banner_alt.png"
+
+
 def json_reply(route, body, status=200):
     if route.request.method == "OPTIONS":
         return route.fulfill(status=204, headers=CORS)
@@ -122,7 +141,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch()
     errors = []
 
-    def new_ctx(**kw):
+    def new_ctx(banner=True, **kw):
         opts = dict(viewport={"width": 1280, "height": 900}, accept_downloads=True, color_scheme="light")
         opts.update(kw)
         ctx = browser.new_context(**opts)
@@ -132,6 +151,10 @@ with sync_playwright() as p:
         ctx.route("https://api.grants.gov/**", lambda r: json_reply(r, GG))
         ctx.route(API_PREFIX + "**", github_api)
         ctx.route(SITE_URL + "board.json**", pages_copy)
+        # Playwright tries the most recently added route first, so the banner goes after the catch-all.
+        ctx.route("https://spacephysics.princeton.edu/**", lambda r: r.abort())
+        if banner:
+            ctx.route(BANNER_URL, lambda r: r.fulfill(status=200, headers={"Content-Type": "image/png"}, body=BANNER))
         return ctx
 
     def open_page(ctx, url=BASE, tag="page"):
@@ -151,10 +174,17 @@ with sync_playwright() as p:
     loaded(pg)
     pg.wait_for_selector("#lanes .opp")
     check(pg.title() == "PSPL Proposer", "page title")
+    pg.wait_for_function("document.querySelector('.lab-banner img').complete")
+    check(pg.evaluate("document.querySelector('.lab-banner img').naturalWidth") == 2625 and pg.is_hidden(".lab-name"), "the lab banner shows in the header")
+    nob = new_ctx(banner=False)
+    pb = open_page(nob, tag="no banner")
+    loaded(pb)
+    pb.wait_for_selector(".lab-name:not([hidden])")
+    check(pb.is_hidden(".lab-banner img") and pb.inner_text(".lab-name") == "Space Physics at Princeton", "if the banner can't load, the lab's name shows instead")
     check(pg.get_attribute("#editBtn", "aria-pressed") == "false", "opens in view mode")
     check(pg.is_hidden("#addCallBtn"), "Add a call is hidden in view mode")
     check(pg.is_hidden("#changesBand") and pg.is_hidden("#noticeBand"), "no bands on a normal first visit")
-    check(pg.locator("#lanes .opp").count() == 12, "all 12 calls listed")
+    check(pg.locator("#lanes .opp").count() == len(SEED["opps"]), "all calls listed")
     pg.locator("#lanes .opp .opp-head").first.click()
     body = pg.locator("#lanes .opp.is-open .opp-body")
     check(body.locator(".stepper button").count() == 0, "no score buttons in view mode")
@@ -162,7 +192,7 @@ with sync_playwright() as p:
     check(body.locator(".actions").count() == 0, "no Edit, Rescore, Archive or Delete in view mode")
     pg.click("#tab-capabilities")
     check(pg.locator("#capList input[type=checkbox]").count() == 0, "no Confirmed checkboxes in view mode")
-    check(pg.locator("#capList .confirm-text").count() == 17, "each capability row shows whether it's confirmed")
+    check(pg.locator("#capList .confirm-text").count() == len(SEED["caps"]), "each capability row shows whether it's confirmed")
     check(pg.is_hidden("#addCap") and pg.is_visible("#capIntroView"), "register is read-only with a hint on how to correct it")
     pg.click("#tab-opportunities")
     pg.click("#checkNowBtn")
@@ -197,7 +227,7 @@ with sync_playwright() as p:
     pg.wait_for_selector("#publishPanel:not([hidden])")
     check(api["calls"] == 1 and api["accept"] == "application/vnd.github.raw+json", "publish reads the latest board through GitHub's API")
     summary = pg.inner_text("#publishSummary")
-    check("12 calls and 17 capability rows" in summary, "publish summary counts the board")
+    check(f"{len(SEED['opps'])} calls and {len(SEED['caps'])} capability rows" in summary, "publish summary counts the board")
     check(pg.get_attribute("#editLink", "href") == EDIT_URL, "GitHub link opens board.json in the editor")
     check(pg.is_hidden("#publishBtn") and pg.is_visible("#publishSteps"), "the three publish steps replace the button")
     pg.click("#copyBoardBtn")
@@ -213,7 +243,7 @@ with sync_playwright() as p:
     errs, _ = check_board.check(data)
     check(not errs, "published board.json passes tools/check_board.py" + ("" if not errs else ": " + "; ".join(errs)))
     same = [k for k in SEED["opps"] if k != "next-hlcas" and data["opps"][k] == SEED["opps"][k]]
-    check(len(same) == 11, "untouched calls are byte-for-byte unchanged")
+    check(len(same) == len(SEED["opps"]) - 1, "untouched calls are byte-for-byte unchanged")
     with pg.expect_download() as dl:
         pg.click("#downloadBoardBtn")
     path = dl.value.path()
@@ -315,7 +345,7 @@ with sync_playwright() as p:
     loaded(pd)
     pd.locator("#lanes .opp .opp-head").first.click()
     bg = pd.evaluate("getComputedStyle(document.body).backgroundColor")
-    check(bg == "rgb(14, 19, 26)", "dark theme follows the computer setting")
+    check(bg == "rgb(20, 20, 20)", "dark theme follows the computer setting")
     pd.screenshot(path=str(OUT / "view-dark.png"), full_page=False)
 
     # 10b. A NASA check in edit mode on a later day goes into the published note.
@@ -347,7 +377,7 @@ with sync_playwright() as p:
     loaded(pf)
     check(pf.is_visible("#noticeBand") and "downloaded copy" in pf.inner_text("#noticeText"), "a downloaded copy says so")
     check(pf.get_attribute("#noticeText a", "href") == SITE_URL, "and links to the shared board")
-    check(pf.locator("#lanes .opp").count() == 12, "a downloaded copy still shows the live board")
+    check(pf.locator("#lanes .opp").count() == len(SEED["opps"]), "a downloaded copy still shows the live board")
 
     # 12. A broken board.json: returning visitors see their last good copy; new ones get a clear message.
     set_board('{"format": "pspl-proposer/1", "opps": {},}')
