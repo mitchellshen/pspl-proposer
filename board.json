@@ -1,8 +1,8 @@
 {
   "format": "pspl-proposer/1",
   "boardId": "pspl-proposer",
-  "app": "1.2.0",
-  "savedAt": "2026-10-24T03:42:33.000Z",
+  "app": "1.3.0",
+  "savedAt": "2026-10-24T04:03:03.959Z",
   "site": "https://mitchellshen.github.io/pspl-proposer/",
   "repo": "https://github.com/mitchellshen/pspl-proposer",
   "maintainer": "Mitchell Shen",
@@ -498,9 +498,9 @@
         "url": "https://www.princeton.edu/news/2025/07/24/nasa-princeton-hands-lab-trains-students-teamwork-building-space-equipment"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 1,
-      "updatedAt": "2026-10-22T21:30:00Z"
+      "updatedAt": "2026-10-24T04:00:58.349Z"
     },
     "C2": {
       "kind": "cap",
@@ -513,9 +513,9 @@
         "url": "https://www.princeton.edu/index%2ephp/news/2023/02/13/princeton-space-nasas-imap-mission-clears-critical-hurdle-launch"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 2,
-      "updatedAt": "2026-10-22T21:30:00Z"
+      "updatedAt": "2026-10-24T04:01:08.450Z"
     },
     "C3": {
       "kind": "cap",
@@ -527,9 +527,9 @@
         "label": "Public record (verify)"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 3,
-      "updatedAt": "2026-10-22T21:30:00Z"
+      "updatedAt": "2026-10-24T04:01:28.699Z"
     },
     "C4": {
       "kind": "cap",
@@ -542,9 +542,9 @@
         "url": "https://spacephysics.princeton.edu/cal-system-intro"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 4,
-      "updatedAt": "2026-10-24T03:42:33.000Z"
+      "updatedAt": "2026-10-24T04:01:36.550Z"
     },
     "C5": {
       "kind": "cap",
@@ -557,9 +557,9 @@
         "url": "https://spacephysics.princeton.edu/cal-system-intro"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 5,
-      "updatedAt": "2026-10-24T03:42:33.000Z"
+      "updatedAt": "2026-10-24T04:01:41.216Z"
     },
     "C6": {
       "kind": "cap",
@@ -572,9 +572,9 @@
         "url": "https://spacephysics.princeton.edu/cal-system-intro"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 6,
-      "updatedAt": "2026-10-24T03:42:33.000Z"
+      "updatedAt": "2026-10-24T04:01:44.382Z"
     },
     "C7": {
       "kind": "cap",
@@ -586,9 +586,9 @@
         "label": "Mitchell's notes (Oct 2026)"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 7,
-      "updatedAt": "2026-10-23T22:28:32.000Z"
+      "updatedAt": "2026-10-24T04:01:52.398Z"
     },
     "C8": {
       "kind": "cap",
@@ -600,9 +600,9 @@
         "label": "Mitchell's notes (Sep 2026)"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 8,
-      "updatedAt": "2026-10-23T22:28:32.000Z"
+      "updatedAt": "2026-10-24T04:02:00.482Z"
     },
     "C9": {
       "kind": "cap",
@@ -614,9 +614,9 @@
         "label": "Mitchell's notes"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 9,
-      "updatedAt": "2026-10-23T22:28:32.000Z"
+      "updatedAt": "2026-10-24T04:02:05.968Z"
     },
     "C10": {
       "kind": "cap",
@@ -671,9 +671,9 @@
         "url": "https://www.princeton.edu/news/2025/07/24/nasa-princeton-hands-lab-trains-students-teamwork-building-space-equipment"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 13,
-      "updatedAt": "2026-10-22T21:30:00Z"
+      "updatedAt": "2026-10-24T04:02:35.499Z"
     },
     "C14": {
       "kind": "cap",
@@ -686,9 +686,9 @@
         "url": "https://spacephysics.princeton.edu/cal-system-intro"
       },
       "owner": "",
-      "confirmed": false,
+      "confirmed": true,
       "order": 14,
-      "updatedAt": "2026-10-24T03:42:33.000Z"
+      "updatedAt": "2026-10-24T04:02:39.166Z"
     },
     "G1": {
       "kind": "gap",
