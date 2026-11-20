@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>PSPL Proposer</title>
-<meta name="description" content="NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.">
+<meta name="description" content="NASA and NSF calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.">
 <link rel="icon" type="image/png" href="assets/spp-icon-64.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css?v=1.4.0">
-<script src="app.js?v=1.4.0" defer></script>
+<link rel="stylesheet" href="style.css?v=1.5.0">
+<script src="app.js?v=1.5.0" defer></script>
 </head>
 <body>
 <template id="app-shell">
@@ -29,12 +29,12 @@
         <img class="lab-logo" src="assets/spp-logo.png" alt="Space Physics at Princeton logo" width="114" height="88" onerror="this.hidden = true;">
         <div class="brand-text">
           <h1>PSPL Proposer</h1>
-          <p class="sub">NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.</p>
+          <p class="sub">NASA and NSF calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.</p>
         </div>
       </div>
       <div class="mast-actions">
         <span class="checked mono" id="checked"></span>
-        <button class="btn" id="checkNowBtn" type="button" title="Reads NASA's ROSES blog and Grants.gov for new and changed calls">Check NASA now</button>
+        <button class="btn" id="checkNowBtn" type="button" title="Reads NASA's ROSES blog, and NASA's and NSF's listings on Grants.gov, for new and changed calls">Check for new calls</button>
         <button class="btn" id="editBtn" type="button" aria-pressed="false" title="Turn editing on or off in this browser">Edit</button>
         <button class="btn primary" id="addCallBtn" type="button" hidden>Add a call</button>
       </div>
@@ -43,7 +43,7 @@
       <div class="stat"><span class="stat-n" id="st-open">&mdash;</span><span class="stat-l">open now</span></div>
       <div class="stat"><span class="stat-n" id="st-soon">&mdash;</span><span class="stat-l">due within 30 days</span></div>
       <div class="stat"><span class="stat-n" id="st-high">&mdash;</span><span class="stat-l">high fits</span></div>
-      <div class="stat" id="st-review-wrap" hidden><span class="stat-n accent" id="st-review">0</span><span class="stat-l">NASA posts to review</span></div>
+      <div class="stat" id="st-review-wrap" hidden><span class="stat-n accent" id="st-review">0</span><span class="stat-l">to review</span></div>
       <div class="stat"><span class="stat-n" id="st-conf">&mdash;</span><span class="stat-l">capabilities to confirm</span></div>
     </div>
   </div>
@@ -98,9 +98,11 @@
         <p class="match-intro">Fill in what you know and add it to the board. To get scores, gaps and a next action suggested, use Suggest with AI: it builds a prompt from the call and the capability register for an AI assistant such as Copilot, ChatGPT or Claude.</p>
         <form class="form" id="addForm" novalidate>
           <label class="full"><span>Call name</span><input id="a-title" name="title" type="text" maxlength="200" placeholder="e.g. Heliophysics Low-Cost Access to Space"></label>
-          <label><span>Short name</span><input id="a-abbr" name="abbr" type="text" maxlength="24" placeholder="e.g. H-LCAS"></label>
-          <label><span>Element or call number</span><input id="a-element" name="element" type="text" maxlength="60" placeholder="e.g. ROSES-25 B.7"></label>
+          <label><span>Funder</span><select id="a-agency" name="agency"></select></label>
           <label><span>Division</span><select id="a-division" name="division"></select></label>
+          <label><span>Short name</span><input id="a-abbr" name="abbr" type="text" maxlength="24" placeholder="e.g. H-LCAS"></label>
+          <label><span>Element or call number</span><input id="a-element" name="element" type="text" maxlength="60" placeholder="e.g. ROSES-25 B.7 or NSF 26-516"></label>
+          <label><span>Solicitation ID <span class="help">(optional)</span></span><input id="a-sid" name="sid" type="text" maxlength="80" placeholder="e.g. NNH25ZDA001N-HLCAS or NSF 26-516"></label>
           <label><span>Status</span><select id="a-status" name="status">
             <option value="open">Open</option>
             <option value="step2">Step-2 only</option>
@@ -108,8 +110,8 @@
             <option value="unknown">Unknown</option>
           </select></label>
           <label><span>Next deadline</span><input id="a-due" name="due" type="date"></label>
-          <label><span>What's due</span><input id="a-duelabel" name="dueLabel" type="text" maxlength="200" placeholder="e.g. Step-1 proposal"></label>
-          <label class="full"><span>Link to the call</span><input id="a-source" name="source" type="url" maxlength="500" placeholder="https://science.nasa.gov/researchers/solicitations/..."></label>
+          <label><span>What's due</span><input id="a-duelabel" name="dueLabel" type="text" maxlength="200" placeholder="e.g. Step-1 proposal, or Proposals accepted anytime"></label>
+          <label class="full"><span>Link to the call</span><input id="a-source" name="source" type="url" maxlength="500" placeholder="https://science.nasa.gov/... or https://www.nsf.gov/funding/..."></label>
           <label class="full"><span>Call text <span class="help">(optional; it helps the AI suggestion)</span></span><textarea id="a-text" name="text" rows="5" placeholder="Paste the scope, eligibility and due-date sections of the call."></textarea></label>
           <div class="form-actions">
             <button class="btn primary" id="a-save" type="submit">Add to board</button>
@@ -131,9 +133,10 @@
 
       <div class="toolbar">
         <label class="search"><span class="sr">Search calls</span><input type="search" id="oppSearch" placeholder="Search calls, codes or capability IDs" autocomplete="off"></label>
-        <div class="seg" role="group" aria-label="Filter by fit">
+        <div class="seg" id="fitSeg" role="group" aria-label="Filter by fit">
           <button type="button" data-fit="all">All</button><button type="button" data-fit="high">High</button><button type="button" data-fit="medium">Medium</button><button type="button" data-fit="low">Low</button>
         </div>
+        <div class="seg" id="agencySeg" role="group" aria-label="Filter by funder" hidden></div>
         <button class="btn" id="exportOpps" type="button">Export CSV</button>
         <button class="btn" id="exportIcs" type="button" title="Save every upcoming deadline as calendar events, each with a reminder a week before">Add deadlines to calendar</button>
       </div>
@@ -162,7 +165,7 @@
         <p>Anyone can choose Edit and try changes, including correcting or confirming capabilities, but those changes stay in their own browser. Nothing reaches the shared board until it's committed to board.json on GitHub, and only people added to the board's repository can commit. Everyone else's changes go to <span id="maintainerInline">whoever looks after the board</span> to approve.</p>
         <ol>
           <li>Choose Edit at the top. It applies to this browser only, and you can turn it off the same way.</li>
-          <li>Correct capabilities, adjust scores, add calls and review new NASA posts. Your changes stay in this browser, counted in the orange band at the top, until you publish them.</li>
+          <li>Correct capabilities, adjust scores, add calls and review new NASA posts and NSF listings. Your changes stay in this browser, counted in the orange band at the top, until you publish them.</li>
           <li>Choose Publish changes in the band and follow its three steps: copy the new board, paste it over board.json on GitHub, and commit.</li>
           <li>Not added to the repository? GitHub offers Propose changes instead of Commit changes, which sends your edit for approval. Or download board.json from the band and send it on.</li>
         </ol>
@@ -172,7 +175,9 @@
           <div><button class="btn" id="set-maintainer-save" type="button">Save name</button></div>
         </div>
         <h2>Finding new calls</h2>
-        <p>Check NASA now reads NASA's ROSES blog, where NASA announces new program elements, amendments and corrections, and NASA's listings on Grants.gov. It runs in your browser, so anyone can use it, and what it finds is kept in that browser. Posts the board hasn't reviewed yet wait under To review. In edit mode, add the ones that fit, mark the rest reviewed, and publish. NASA's solicitation site (NSPIRES) can't be read by the page, so open the links for full call texts.</p>
+        <p>Check for new calls reads NASA's ROSES blog, where NASA announces new program elements, amendments and corrections, and NASA's and NSF's listings on Grants.gov. It runs in your browser, so anyone can use it, and what it finds is kept in that browser. Posts and listings the board hasn't reviewed yet wait under To review. In edit mode, add the ones that fit, mark the rest reviewed, and publish. NASA's solicitation site (NSPIRES) and NSF's own site can't be read by the page, so open the links for full call texts.</p>
+        <p>For NSF, the check watches the programs that fit the lab: GEO Core (which now covers geospace research), MPS Astro, MPS Physics, Major Research Instrumentation (MRI), Mid-scale Research Infrastructure, CAREER and the AGS postdoctoral fellowships, plus any NSF listing whose title mentions geospace, heliophysics, space weather, plasma or a similar topic. Other NSF listings posted since the NSF check began wait, folded, under Other NSF listings. Many NSF programs accept proposals anytime, so their calls show Anytime instead of a countdown and stay out of calendar files.</p>
+        <p>Any call can also be added by hand with Add a call, from NASA, NSF or another funder.</p>
         <p>Open calls whose last deadline has passed move to Deadline passed at the bottom of the list, until someone sets the next deadline or archives them.</p>
         <p id="checkNote"></p>
         <h2>How a call is scored</h2>
@@ -183,7 +188,7 @@
             <tbody>
               <tr><td>Alignment</td><td>0&ndash;3</td><td>How directly do the call's science or technology goals match what PSPL does?</td></tr>
               <tr><td>Readiness</td><td>0&ndash;3</td><td>Could PSPL write a competitive proposal today with what the register shows?</td></tr>
-              <tr><td>Timing</td><td>0&ndash;2</td><td>0 if under about three weeks or closed to new entrants, 1 if about a month away or unknown, 2 if months away or not yet released.</td></tr>
+              <tr><td>Timing</td><td>0&ndash;2</td><td>0 if under about three weeks or closed to new entrants, 1 if about a month away or unknown, 2 if months away, not yet released, or accepted anytime.</td></tr>
               <tr><td>Fit</td><td>0&ndash;8</td><td>High 6&ndash;8, Medium 4&ndash;5, Low 0&ndash;3.</td></tr>
             </tbody>
           </table>
@@ -191,7 +196,7 @@
         <h2>AI suggestions</h2>
         <p>In edit mode, Suggest with AI on a new call and Rescore with AI on an existing one build a prompt from the call and the capability register. Paste it into an AI assistant you can use, paste the reply back, and review the suggestion before you keep it. The page itself never sends the board anywhere.</p>
         <h2>What isn't covered yet</h2>
-        <p>NSF, DoD, ESA and other funders. Calls marked Expected are based on ROSES-25 and NASA's planning list, and may change when ROSES-27 is released.</p>
+        <p>DoD, ESA and other funders aren't checked; add their calls by hand. Changes to an NSF call that's already on the board aren't flagged, so check its NSF page before you plan around it. Calls marked Expected are based on ROSES-25 and NASA's planning list, and may change when ROSES-27 is released.</p>
         <h2>This browser</h2>
         <div class="settings">
           <label for="set-theme">Theme<select id="set-theme">
