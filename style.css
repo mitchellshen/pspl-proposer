@@ -2,7 +2,8 @@
    Princeton-orange rule and the lab's banner, a charcoal section bar with an orange marker under the active tab,
    Montserrat headings with a short orange bar, Roboto text, and a matching footer. Below the header: a notice band
    for saved copies, an orange band when this browser holds unpublished changes (with the publish steps), then the
-   ranked board of NASA calls (To review, Open now, Expected) and the capability register. Countdowns read T-minus. */
+   ranked board of NASA and NSF calls (To review, Open now, Expected) and the capability register. Countdowns read
+   T-minus; calls that take proposals anytime read Anytime. */
 :root {
   --bg: #F4F4F4;
   --surface: #FFFFFF;

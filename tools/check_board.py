@@ -4,8 +4,8 @@
     python3 tools/check_board.py            # check board.json; exit 1 on errors
     python3 tools/check_board.py --format   # also rewrite it in the app's canonical form
 
-Errors stop the site from deploying (see .github/workflows/pages.yml). Warnings are printed
-but don't block. Only the Python standard library is used.
+Errors fail the Check board.json action (.github/workflows/check.yml), which runs on every push
+and pull request. Warnings are printed but don't fail it. Only the Python standard library is used.
 """
 import json
 import re
@@ -14,9 +14,16 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OPP_FIELDS = ["abbr", "element", "title", "division", "sid", "status", "prevStatus", "statusNote", "due", "dueLabel", "a", "r", "t", "brings", "bringsText", "gaps", "says", "action", "notes", "sources", "flag", "origin", "createdAt", "updatedAt"]
+OPP_FIELDS = ["abbr", "agency", "element", "title", "division", "sid", "status", "prevStatus", "statusNote", "due", "dueLabel", "a", "r", "t", "brings", "bringsText", "gaps", "says", "action", "notes", "sources", "flag", "origin", "createdAt", "updatedAt"]
 CAP_FIELDS = ["kind", "category", "name", "evidence", "maturity", "source", "owner", "confirmed", "order", "updatedAt"]
 STATUSES = {"open", "step2", "expected", "unknown", "archived"}
+# A call without "agency" is NASA's. Divisions outside these lists are allowed but flagged.
+DIVISIONS = {
+    "NASA": {"Heliophysics", "Planetary", "Astrophysics", "Earth Science", "Cross-division", "Exploration", "Technology", "Other"},
+    "NSF": {"Geosciences", "Mathematical and Physical Sciences", "NSF-wide", "Other"},
+    "Other": {"Other"},
+}
+DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 URL = re.compile(r"^https?://\S+$", re.I)
 STAMP = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$")
 
@@ -42,6 +49,11 @@ def canonical(data):
     if isinstance(nasa.get("blogs"), list):
         nasa["blogs"] = sorted(nasa["blogs"], key=lambda b: b.get("id", 0) if isinstance(b, dict) else 0)
     out["nasa"] = nasa
+    if isinstance(data.get("nsf"), dict):
+        nsf = dict(data["nsf"])
+        if isinstance(nsf.get("reviewed"), dict):
+            nsf["reviewed"] = dict(sorted(nsf["reviewed"].items()))
+        out["nsf"] = nsf
     out["opps"] = {k: canon(v, OPP_FIELDS) for k, v in sorted(data["opps"].items())}
     out["caps"] = {k: canon(v, CAP_FIELDS) for k, v in sorted(data["caps"].items(), key=lambda kv: (cap_key(kv[0]), kv[0]))}
     return json.dumps(out, ensure_ascii=False, indent=2) + "\n"
@@ -71,6 +83,17 @@ def check(data):
             err('"nasa.reviewed" must map post keys to timestamps.')
         if not isinstance(nasa.get("blogs", []), list) or not all(isinstance(b, dict) and isinstance(b.get("id"), int) for b in nasa.get("blogs", [])):
             err('"nasa.blogs" must be a list of {"id": number, "label": text}.')
+    nsf = data.get("nsf")
+    if nsf is not None and not isinstance(nsf, dict):
+        err('"nsf" must be an object.')
+    elif nsf:
+        if not isinstance(nsf.get("reviewed", {}), dict) or not all(isinstance(v, str) for v in nsf.get("reviewed", {}).values()):
+            err('"nsf.reviewed" must map listing keys to dates.')
+        elif not all(k.startswith("nsf:") for k in nsf.get("reviewed", {})):
+            warn('"nsf.reviewed" keys usually start with "nsf:".')
+        floor = nsf.get("floor")
+        if floor is not None and not (isinstance(floor, str) and DAY.match(floor)):
+            err('"nsf.floor" must be a date such as 2026-11-20, or null.')
     for key in ("site", "repo"):
         if key in data and not (isinstance(data[key], str) and URL.match(data[key])):
             err(f'"{key}" must be a web address.')
@@ -112,6 +135,11 @@ def check(data):
             err(f'{where}: "title" is required.')
         if o.get("status") not in STATUSES:
             err(f'{where}: "status" must be one of {", ".join(sorted(STATUSES))}.')
+        agency = o.get("agency", "NASA")
+        if agency not in DIVISIONS:
+            err(f'{where}: "agency" must be one of {", ".join(DIVISIONS)}.')
+        elif o.get("division") and o["division"] not in DIVISIONS[agency]:
+            warn(f'{where}: "{o["division"]}" isn\'t one of the {agency} divisions the page offers.')
         for f, top in (("a", 3), ("r", 3), ("t", 2)):
             v = o.get(f)
             if not (isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= top):

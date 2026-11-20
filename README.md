@@ -1,6 +1,6 @@
 # PSPL Proposer
 
-NASA calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.
+NASA and NSF calls ranked by how well they fit what the Princeton Space Physics Lab can build, calibrate, fly and analyze.
 
 **Open the board: https://mitchellshen.github.io/pspl-proposer/**
 
@@ -35,9 +35,15 @@ Small fixes can also be made directly in `board.json` on GitHub. The **Check boa
 
 The site is public: anyone with the address can read the board. Keep budgets, proposal plans that aren't public yet and reviewer comments off the board.
 
-## Checking NASA
+## Checking for new calls
 
-**Check NASA now** reads NASA's ROSES blog, where NASA posts new program elements, amendments and corrections, and NASA's listings on Grants.gov, straight from the visitor's browser. It asks only for posts changed since the last review. Posts that aren't on the board or reviewed yet wait under **To review**. In edit mode, add the ones that fit, mark the rest reviewed, and publish.
+**Check for new calls** reads NASA's ROSES blog, where NASA posts new program elements, amendments and corrections, and NASA's and NSF's listings on Grants.gov, straight from the visitor's browser. It asks NASA only for posts changed since the last review. Posts and listings that aren't on the board or reviewed yet wait under **To review**. In edit mode, add the ones that fit, mark the rest reviewed, and publish.
+
+NSF's own site can't be read from the page, but NSF lists all of its open funding opportunities on Grants.gov, so one request brings them all. The check watches the NSF programs that fit the lab (GEO Core, MPS Astro, MPS Physics, MRI, Mid-scale Research Infrastructure, CAREER and the AGS postdoctoral fellowships) and any listing whose title names a lab topic such as geospace, heliophysics, space weather or plasma; their funding and award sizes come from each listing's Grants.gov record. Other NSF listings posted since the NSF check began fold under **Other NSF listings**. The watch list is `NSF_WATCH` in `app.js`.
+
+Many NSF programs now accept proposals anytime. Grants.gov marks those with a placeholder close date decades away; the page shows them as **Anytime**, scores their Timing 2 and leaves them out of calendar files.
+
+Every call has a funder: NASA, NSF or another funder (calls saved before 1.5.0 have none and count as NASA's). Calls from other funders, such as DoD or ESA, can be added by hand with **Add a call**.
 
 ## Files
 
@@ -45,9 +51,9 @@ The site is public: anyone with the address can read the board. Keep budgets, pr
 | --- | --- |
 | `index.html`, `app.js`, `style.css` | The page. Plain HTML, JavaScript and CSS with no build step. |
 | `assets/` | The Space Physics at Princeton banner, logo and icons. |
-| `board.json` | The board: calls, scores, the capability register and the NASA posts already reviewed. |
+| `board.json` | The board: calls, scores, the capability register, and the NASA posts and NSF listings already reviewed. |
 | `tools/check_board.py` | Checks `board.json`; `--format` tidies a hand-edited file into the layout the page writes. |
-| `test/test_site.py` | Browser tests (view and edit mode, publishing, conflicts, saved copies, a broken board, phone width). |
+| `test/test_site.py` | Browser tests (view and edit mode, publishing, conflicts, NSF calls, saved copies, a broken board, phone width). |
 | `extras/PSPL Proposer.html` | A one-line page that sends anyone opening the old single-file version to the site. Put it where that file used to be, such as the shared OneDrive folder. |
 
 ## Setup (once)
@@ -63,6 +69,6 @@ python -m playwright install chromium
 python3 test/test_site.py
 ```
 
-The tests serve a temporary copy of the site and stand in for NASA, Grants.gov and GitHub, so they don't touch the live board. Screenshots land in `test/output/`.
+The tests serve a temporary copy of the site and stand in for NASA, Grants.gov and GitHub, so they don't touch the live board. They run on a fixed date, so the board's own deadlines don't age them. Screenshots land in `test/output/`.
 
 Version history is in [CHANGELOG.md](CHANGELOG.md).

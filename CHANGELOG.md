@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.0 (2026-11-20)
+
+- NSF calls. **Check NASA now** is now **Check for new calls**: besides NASA's ROSES blog and NASA's Grants.gov listings, it reads NSF's listings on Grants.gov in one request. The NSF programs that fit the lab (GEO Core, MPS Astro, MPS Physics, MRI, Mid-scale Research Infrastructure, CAREER and the AGS postdoctoral fellowships), and listings whose titles name a lab topic, wait under To review with their funding and award sizes. Other new NSF listings fold under Other NSF listings.
+- Every call has a funder (NASA, NSF or another funder); calls without one are NASA's. Add a call and Edit offer each funder's divisions, Add a call also takes a solicitation ID, and a funder filter appears once the board holds calls from more than one funder.
+- Calls that accept proposals anytime show Anytime instead of a countdown, score Timing 2 and stay out of calendar files.
+- NSF listings reviewed are kept under `nsf` in board.json; the band counts NASA posts and listings separately.
+- AI prompts name the funder and, for NSF calls, NSF's review criteria. "What NASA asks for" is now "What the call asks for", and the CSV export has a Funder column.
+- Publishing stops and asks for a reload when the board was last published from a newer version of the page, so an old open tab can't drop newer fields.
+- The tests run on a fixed date, so the board's own deadlines no longer age them, and cover NSF calls: 114 checks.
+
 ## 1.4.0 (2026-10-24)
 
 - Every call has Copy link, and the link opens the board with that call open.

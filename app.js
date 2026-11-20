@@ -1,12 +1,13 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "1.4.0";
+  const APP_VERSION = "1.5.0";
   const BOARD_ID = "pspl-proposer";
   const DEFAULT_SITE = "https://mitchellshen.github.io/pspl-proposer/";
   const DEFAULT_REPO = "https://github.com/mitchellshen/pspl-proposer";
   const NASA_API = "https://science.nasa.gov/wp-json/wp/v2/topic";
   const GG_API = "https://api.grants.gov/v1/api/search2";
+  const GG_DETAIL_API = "https://api.grants.gov/v1/api/fetchOpportunity";
   const IS_FILE = location.protocol === "file:";
 
   // ---------- small helpers ----------
@@ -52,15 +53,32 @@
   const isObj = (x) => !!x && typeof x === "object" && !Array.isArray(x);
   const byCode = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
   const shortUrl = (u) => String(u || "").replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  function cmpVersion(a, b) {
+    const pa = String(a || "").split(".").map((x) => parseInt(x, 10) || 0);
+    const pb = String(b || "").split(".").map((x) => parseInt(x, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d) return d; }
+    return 0;
+  }
 
   const STATUS = { open: "Open", step2: "Step-2 only", expected: "Expected", unknown: "Unknown", archived: "Archived" };
-  const DIVISIONS = ["Heliophysics", "Planetary", "Astrophysics", "Earth Science", "Cross-division", "Exploration", "Technology", "Other"];
+  // Calls without an agency are NASA's: every call on the board before 1.5.0 was.
+  const AGENCIES = ["NASA", "NSF", "Other"];
+  const AGENCY_LABEL = { NASA: "NASA", NSF: "NSF", Other: "Other funder" };
+  const DIVISIONS = {
+    NASA: ["Heliophysics", "Planetary", "Astrophysics", "Earth Science", "Cross-division", "Exploration", "Technology", "Other"],
+    NSF: ["Geosciences", "Mathematical and Physical Sciences", "NSF-wide", "Other"],
+    Other: ["Other"],
+  };
+  const agencyOf = (o) => (o && AGENCIES.includes(o.agency) ? o.agency : "NASA");
+  const divisionsFor = (agency) => DIVISIONS[agency] || DIVISIONS.Other;
+  // Solicitation IDs compared without case or a leading "NSF", so "NSF 26-516" on the board matches 26-516 on Grants.gov.
+  const sidKey = (s) => str(s, 80).toUpperCase().replace(/^NSF\s+/, "");
   const LETTER_DIV = { A: "Earth Science", B: "Heliophysics", C: "Planetary", D: "Astrophysics", E: "Other", F: "Cross-division" };
   const MAIN_LETTERS = new Set(["B", "C", "F"]);
   const OPEN = new Set(["open", "step2"]);
   const LATER = new Set(["expected", "unknown"]);
   const TABS = ["opportunities", "capabilities", "method"];
-  const OPP_FIELDS = ["abbr", "element", "title", "division", "sid", "status", "prevStatus", "statusNote", "due", "dueLabel", "a", "r", "t", "brings", "bringsText", "gaps", "says", "action", "notes", "sources", "flag", "origin", "createdAt", "updatedAt"];
+  const OPP_FIELDS = ["abbr", "agency", "element", "title", "division", "sid", "status", "prevStatus", "statusNote", "due", "dueLabel", "a", "r", "t", "brings", "bringsText", "gaps", "says", "action", "notes", "sources", "flag", "origin", "createdAt", "updatedAt"];
   const CAP_FIELDS = ["kind", "category", "name", "evidence", "maturity", "source", "owner", "confirmed", "order", "updatedAt"];
 
   // ---------- storage ----------
@@ -88,6 +106,8 @@
     out.nasa = isObj(d.nasa) ? Object.assign({}, d.nasa) : {};
     out.nasa.reviewed = isObj(out.nasa.reviewed) ? out.nasa.reviewed : {};
     out.nasa.blogs = Array.isArray(out.nasa.blogs) ? out.nasa.blogs : [];
+    out.nsf = isObj(d.nsf) ? Object.assign({}, d.nsf) : {};
+    out.nsf.reviewed = isObj(out.nsf.reviewed) ? out.nsf.reviewed : {};
     out.site = safeUrl(d.site) || DEFAULT_SITE;
     out.repo = safeUrl(d.repo) || DEFAULT_REPO;
     return out;
@@ -131,11 +151,11 @@
   const S = {
     loaded: false, loadFrom: "", loadBroken: false,
     opps: new Map(), caps: new Map(), storageOk: true,
-    tab: "opportunities", fit: "all", q: "", capQ: "", theme: "auto", editMode: false,
-    expanded: new Set(), editingOpp: null, editingCap: null, addingCap: false, archOpen: false, passedOpen: false, otherOpen: false,
+    tab: "opportunities", fit: "all", agency: "all", q: "", capQ: "", theme: "auto", editMode: false,
+    expanded: new Set(), editingOpp: null, editingCap: null, addingCap: false, archOpen: false, passedOpen: false, otherOpen: false, nsfOtherOpen: false,
     flashCap: null, flashOpp: null,
     proposals: new Map(),
-    add: { reviewKey: null, reviewStamp: null, result: null },
+    add: emptyAdd(),
     review: { items: [], checkedAt: null, status: null, blogs: [] },
     checking: false, publish: null,
   };
@@ -162,7 +182,7 @@
     }
     const rev = isObj(c.reviewed) ? c.reviewed : {};
     for (const [k, v] of Object.entries(rev)) {
-      const b = BASE.nasa.reviewed[k];
+      const b = reviewedIn(BASE, k)[k];
       if (typeof v === "string" && !(typeof b === "string" && b >= v)) out.reviewed[k] = v;
     }
     const m = isObj(c.meta) ? c.meta : {};
@@ -221,12 +241,14 @@
     else delete CH.caps[id];
     persist();
   }
+  // NSF listings reviewed are kept under "nsf" in board.json; NASA posts and NASA listings under "nasa".
+  const reviewedIn = (board, key) => (String(key).startsWith("nsf:") ? board.nsf : board.nasa).reviewed;
   function reviewedStamp(key) {
     if (typeof CH.reviewed[key] === "string") return CH.reviewed[key];
-    const b = BASE.nasa.reviewed[key];
+    const b = reviewedIn(BASE, key)[key];
     return typeof b === "string" ? b : null;
   }
-  // Reviewed, and not changed by NASA since.
+  // Reviewed, and not changed since.
   function isReviewed(key, modified) {
     const r = reviewedStamp(key);
     return !!r && !(modified && r < modified);
@@ -285,6 +307,12 @@
     const { board: base, fresh } = await fetchLatest();
     btn.disabled = false;
     btn.textContent = "Publish changes";
+    // A board written by a newer version of the page may hold fields this one doesn't know; publishing
+    // from here could drop them. Reloading picks up the newer page and keeps this browser's changes.
+    if (cmpVersion(base.app, APP_VERSION) > 0) {
+      toast("The board was last published from a newer version of this page. Reload the page, then publish again; your changes are kept.", 9000);
+      return;
+    }
     const opps = Object.assign({}, base.opps);
     const caps = Object.assign({}, base.caps);
     let older = 0;
@@ -298,10 +326,11 @@
         applied++;
       }
     }
-    const reviewed = Object.assign({}, base.nasa.reviewed);
+    const reviewed = { nasa: Object.assign({}, base.nasa.reviewed), nsf: Object.assign({}, base.nsf.reviewed) };
     for (const [k, v] of Object.entries(CH.reviewed)) {
-      if (typeof reviewed[k] === "string" && reviewed[k] >= v) continue;
-      reviewed[k] = v;
+      const map = k.startsWith("nsf:") ? reviewed.nsf : reviewed.nasa;
+      if (typeof map[k] === "string" && map[k] >= v) continue;
+      map[k] = v;
       applied++;
     }
     let maintainer = str(base.maintainer, 80);
@@ -319,8 +348,9 @@
       site: base.site, repo: base.repo,
       maintainer,
       checkedOn,
-      checkNote: localCheck && cd ? "Last checked " + fmtDay(cd, true) + " with Check NASA now (" + (CH.meta.checkedVia || "NASA") + ")." : (base.checkNote || ""),
-      nasa: { floor: base.nasa.floor || null, blogs: [...blogMap].map(([id, label]) => ({ id, label })).sort((x, y) => x.id - y.id), reviewed: sortObj(reviewed) },
+      checkNote: localCheck && cd ? "Last checked " + fmtDay(cd, true) + " against " + (CH.meta.checkedVia || "NASA's ROSES blog") + "." : (base.checkNote || ""),
+      nasa: { floor: base.nasa.floor || null, blogs: [...blogMap].map(([id, label]) => ({ id, label })).sort((x, y) => x.id - y.id), reviewed: sortObj(reviewed.nasa) },
+      nsf: { floor: base.nsf.floor || NSF_START, reviewed: sortObj(reviewed.nsf) },
       opps: sortedDocs(opps, OPP_FIELDS, byCode),
       caps: sortedDocs(caps, CAP_FIELDS, (a, b) => capKey(a) - capKey(b) || byCode(a, b)),
     };
@@ -335,13 +365,14 @@
     const p = store.get(K_PREFS, {}) || {};
     if (TABS.includes(p.tab)) S.tab = p.tab;
     if (["all", "high", "medium", "low"].includes(p.fit)) S.fit = p.fit;
+    if (["all", ...AGENCIES].includes(p.agency)) S.agency = p.agency;
     if (["auto", "light", "dark"].includes(p.theme)) S.theme = p.theme;
     S.editMode = p.editMode === true;
     const hs = (location.hash || "").slice(1);
     if (TABS.includes(hs)) S.tab = hs;
     applyTheme();
   }
-  function savePrefs() { store.set(K_PREFS, { tab: S.tab, fit: S.fit, theme: S.theme, editMode: S.editMode }); }
+  function savePrefs() { store.set(K_PREFS, { tab: S.tab, fit: S.fit, agency: S.agency, theme: S.theme, editMode: S.editMode }); }
   function applyTheme() {
     const r = document.documentElement;
     if (S.theme === "auto") r.removeAttribute("data-theme");
@@ -477,10 +508,12 @@
     const d = parseDay(String(s || ""));
     return d ? isoDay(d) : "";
   }
+  const ggLink = (id, number) => (id ? "https://www.grants.gov/search-results-detail/" + encodeURIComponent(id) : "https://www.grants.gov/search-grants?keywords=" + encodeURIComponent(number));
+  const boardSids = () => new Set([...S.opps.values()].map((o) => sidKey(o.sid)).filter(Boolean));
   function ggItem(x) {
     if (!x || typeof x !== "object") return null;
     const number = str(x.number || x.opportunityNumber, 80);
-    const title = str(x.title || x.opportunityTitle, 300);
+    const title = htmlText(str(x.title || x.opportunityTitle, 300));
     if (!number || !title) return null;
     const agency = str(x.agencyCode || x.agency || x.agencyName, 120);
     if (!/NASA/i.test(agency) && !/^(NNH|NNX|80)/i.test(number)) return null;
@@ -491,26 +524,27 @@
     const rm = /ROSES[\s-]*(?:20)?(\d{2})\b/i.exec(title);
     const id = x.id != null ? String(x.id) : "";
     return {
-      key: "gg:" + number, source: "gg", number, title,
-      link: id ? "https://www.grants.gov/search-results-detail/" + encodeURIComponent(id) : "https://www.grants.gov/search-grants?keywords=" + encodeURIComponent(number),
+      key: "gg:" + number, source: "gg", agency: "NASA", number, title,
+      link: ggLink(id, number),
       date: open, modified: open, stamp: open,
       roses: rm ? "ROSES-" + rm[1] : "", code, letter: code ? code[0] : "",
       sentences: closeD ? ["Grants.gov close date: " + fmtDay(closeD, true) + ". For ROSES elements this can be when ROSES closes rather than the proposal deadline."] : [],
       dueGuess: closeD && closeD >= todayLocal() ? close : null, excerpt: number + (agency ? " \u00B7 " + agency : ""), text: "",
     };
   }
-  async function postGrants(body) {
+  async function postGrants(body, url) {
     // Sent as text/plain so the browser makes a simple request: Grants.gov answers that from other
     // sites, but not the preflight a JSON post needs. JSON is the fallback.
+    const to = url || GG_API;
     try {
-      return await getJson(GG_API, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body) });
+      return await getJson(to, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(body) });
     } catch (e) {
       if (e && (e.http || e.name === "AbortError")) throw e;
-      return await getJson(GG_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      return await getJson(to, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     }
   }
   async function fetchGrants(floor) {
-    const sids = new Set([...S.opps.values()].map((o) => str(o.sid, 80)).filter(Boolean));
+    const sids = boardSids();
     const hits = new Map();
     for (const keyword of ["ROSES", "NASA"]) {
       const list = findHits(await postGrants({ keyword, oppStatuses: "forecasted|posted", rows: 100 }));
@@ -520,7 +554,111 @@
         if (it && !hits.has(it.number)) hits.set(it.number, it);
       }
     }
-    return [...hits.values()].filter((it) => !sids.has(it.number) && it.stamp && it.stamp >= floor);
+    return [...hits.values()].filter((it) => !sids.has(sidKey(it.number)) && it.stamp && it.stamp >= floor);
+  }
+
+  // ---------- NSF check ----------
+  // NSF's own site can't be read from this page, but NSF lists every open funding opportunity on
+  // Grants.gov, about a hundred and twenty of them, so one request brings them all. The watch list
+  // picks the programs that fit the lab, topic words catch new programs, and any other NSF listing
+  // posted since the NSF floor waits, folded, under Other NSF listings.
+  const NSF_START = "2026-11-20";
+  const NSF_WATCH = [
+    { re: /\bGEO Core\b|Geosciences (?:Core )?Research/i, abbr: "GEO Core" },
+    { re: /\bMPS Astro\b|Astronomical Sciences Research/i, abbr: "MPS Astro" },
+    { re: /\bMPS Physics\b|Physics Research Programs/i, abbr: "MPS Physics" },
+    { re: /Major Research Instrumentation/i, abbr: "MRI" },
+    { re: /Mid-?scale Research Infrastructure/i, abbr: "Mid-scale RI" },
+    { re: /Faculty Early Career Development|\(CAREER\)/i, abbr: "CAREER" },
+    { re: /Atmospheric and Geospace Sciences Postdoctoral/i, abbr: "AGS-PRF" },
+  ];
+  const NSF_TOPICS = /geospace|heliophys|magnetospher|ionospher|thermospher|aeronomy|space weather|solar[- ]terrestrial|solar physics|space physics|\bplasma|cubesat/i;
+  const CFDA_DIV = { "47.050": "Geosciences", "47.049": "Mathematical and Physical Sciences" };
+  function nsfDivision(cfdas) {
+    const codes = [...new Set((cfdas || []).map((c) => str(c, 12)).filter(Boolean))];
+    return codes.length > 1 ? "NSF-wide" : CFDA_DIV[codes[0]] || "Other";
+  }
+  function nsfAbbr(title, watch) {
+    const m = /\(([^()]{2,24})\)\s*$/.exec(title);
+    if (m) return m[1].trim();
+    const ms = /Mid-?scale Research Infrastructure-?(\d)/i.exec(title);
+    if (ms) return "Mid-scale RI-" + ms[1];
+    return watch ? watch.abbr : "";
+  }
+  const money = (v) => {
+    const n = Number(String(v ?? "").replace(/[^\d.]/g, ""));
+    if (!String(v ?? "").trim() || !Number.isFinite(n) || n <= 0) return "";
+    return n >= 1e6 ? "$" + +(n / 1e6).toFixed(1) + "M" : n >= 1e3 ? "$" + Math.round(n / 1e3) + "K" : "$" + Math.round(n);
+  };
+  function nsfItem(x) {
+    if (!x || typeof x !== "object") return null;
+    const number = str(x.number || x.opportunityNumber, 80);
+    const title = htmlText(str(x.title || x.opportunityTitle, 300));
+    if (!number || !title) return null;
+    if (!/\bNSF\b|National Science Foundation/i.test(str(x.agencyCode || x.agency || x.agencyName, 120))) return null;
+    const open = parseUsDate(x.openDate || x.postDate);
+    const closeD = parseDay(parseUsDate(x.closeDate));
+    // Grants.gov gives NSF calls that accept proposals anytime a placeholder close date decades away.
+    const anytime = !!closeD && closeD.getFullYear() >= 2070;
+    const watch = NSF_WATCH.find((w) => w.re.test(title));
+    const id = x.id != null ? String(x.id) : "";
+    return {
+      key: "nsf:" + number, source: "nsf", agency: "NSF", number, title, id,
+      link: ggLink(id, number), nsfLink: "",
+      date: open, modified: open, stamp: open,
+      roses: "", code: "", letter: "",
+      watched: !!watch || NSF_TOPICS.test(title), abbr: nsfAbbr(title, watch), division: nsfDivision(x.cfdaList),
+      anytime, forecast: /forecast/i.test(str(x.oppStatus, 40)),
+      sentences: anytime ? ["Proposals accepted anytime."] : closeD ? ["Grants.gov close date: " + fmtDay(closeD, true) + ". The call may set submission windows before it."] : [],
+      dueGuess: !anytime && closeD && closeD >= todayLocal() ? isoDay(closeD) : null,
+      excerpt: "", text: "",
+    };
+  }
+  // Funding, award sizes, the synopsis and NSF's own link, from the listing's detail record.
+  async function nsfDetails(it) {
+    const res = await postGrants({ opportunityId: Number(it.id) }, GG_DETAIL_API);
+    const d = res && res.data;
+    const syn = d && d.synopsis;
+    if (!isObj(syn)) return it;
+    const out = Object.assign({}, it);
+    if (/accepted any ?time/i.test(str(syn.responseDateDesc, 200))) { out.anytime = true; out.dueGuess = null; }
+    const facts = [out.anytime ? "Proposals accepted anytime." : it.sentences[0]];
+    const total = money(syn.estimatedFunding);
+    const n = parseInt(syn.numberOfAwards, 10);
+    if (total) facts.push("About " + total + " in all" + (n > 0 ? ", for up to " + n + " awards" : "") + ".");
+    const lo = money(syn.awardFloor);
+    const hi = money(syn.awardCeiling);
+    if (lo && hi) facts.push("Awards of " + lo + " to " + hi + ".");
+    else if (hi) facts.push("Awards of up to " + hi + ".");
+    else if (lo) facts.push("Awards from " + lo + ".");
+    out.sentences = facts.filter(Boolean);
+    const link = safeUrl(String(syn.fundingDescLinkUrl || "").trim().replace(/^http:\/\//i, "https://"));
+    if (link && /^https:\/\/([\w-]+\.)*nsf\.gov\//i.test(link)) out.nsfLink = link;
+    const about = htmlText(syn.synopsisDesc);
+    const who = htmlText(syn.applicantEligibilityDesc);
+    out.excerpt = about.slice(0, 260);
+    out.text = [about, who ? "Eligibility: " + who : ""].filter(Boolean).join("\n\n").slice(0, 4000);
+    if (Array.isArray(d.cfdas) && d.cfdas.length) out.division = nsfDivision(d.cfdas.map((c) => c && c.cfdaNumber));
+    return out;
+  }
+  async function fetchNsf(floor) {
+    const list = findHits(await postGrants({ agencies: "NSF", oppStatuses: "forecasted|posted", rows: 1000 }));
+    if (!list) throw shapeError();
+    const sids = boardSids();
+    const seen = new Set();
+    const items = [];
+    for (const x of list) {
+      const it = nsfItem(x);
+      if (!it || seen.has(it.number) || sids.has(sidKey(it.number))) continue;
+      seen.add(it.number);
+      if (it.watched || (it.stamp && it.stamp >= floor)) items.push(it);
+    }
+    // Only watched listings still to review get their details: a handful of small requests, side by side.
+    const need = items.filter((it) => it.watched && it.id && !isReviewed(it.key, String(it.modified || it.stamp || "")));
+    const got = await Promise.allSettled(need.map(nsfDetails));
+    const done = new Map();
+    got.forEach((r, i) => { if (r.status === "fulfilled") done.set(need[i].key, r.value); });
+    return items.map((it) => done.get(it.key) || it);
   }
   function fetchErr(e, name) {
     if (e && e.name === "AbortError") return name + " took too long to answer.";
@@ -530,13 +668,18 @@
     return name + " couldn't be reached from this browser.";
   }
 
-  async function checkNasa() {
+  function checkedVia(st) {
+    const gg = [st.gg && st.gg.ok ? "NASA" : null, st.nsf && st.nsf.ok ? "NSF" : null].filter(Boolean);
+    return [st.nasa && st.nasa.ok ? "NASA's ROSES blog" : null, gg.length ? "Grants.gov (" + gg.join(" and ") + ")" : null].filter(Boolean).join(" and ");
+  }
+  async function checkCalls() {
     if (S.checking || !S.loaded) return;
     S.checking = true;
     renderHeader();
     renderOpps();
     const floor = String(BASE.nasa.floor || isoDay(new Date(Date.now() - 45 * 864e5))).slice(0, 10);
-    const [rn, rg] = await Promise.allSettled([fetchNasa(floor), fetchGrants(floor)]);
+    const nsfFloor = String(BASE.nsf.floor || NSF_START).slice(0, 10);
+    const [rn, rg, rf] = await Promise.allSettled([fetchNasa(floor), fetchGrants(floor), fetchNsf(nsfFloor)]);
     const status = {};
     let items = [];
     let blogs = S.review.blogs || [];
@@ -553,27 +696,33 @@
       }
       status.gg = { ok: true };
     } else status.gg = { ok: false, msg: fetchErr(rg.reason, "Grants.gov") };
+    if (rf.status === "fulfilled") {
+      items = items.concat(rf.value);
+      status.nsf = { ok: true };
+    } else status.nsf = { ok: false, msg: fetchErr(rf.reason, "Grants.gov") };
     S.review = { items, checkedAt: nowIso(), status, blogs };
     store.set(K_REVIEW, S.review);
-    if (E() && (status.nasa.ok || status.gg.ok)) {
+    const anyOk = status.nasa.ok || status.gg.ok || status.nsf.ok;
+    if (E() && anyOk) {
       CH.meta.checkedOn = isoDay(todayLocal());
-      CH.meta.checkedVia = [status.nasa.ok ? "NASA's ROSES blog" : null, status.gg.ok ? "Grants.gov" : null].filter(Boolean).join(" and ");
+      CH.meta.checkedVia = checkedVia(status);
       if (!store.set(K_CHANGES, CH)) S.storageOk = false;
     }
     S.checking = false;
     if (S.tab !== "opportunities") setTab("opportunities");
     renderAll();
     const n = reviewItems().length;
-    if (!status.nasa.ok && !status.gg.ok) toast("Couldn't reach NASA or Grants.gov from this browser. Check your connection and try again.");
-    else if (!n) toast("Checked NASA: nothing new to review.");
-    else toast("Checked NASA: " + plural(n, "post", "posts") + " to review.");
+    const missed = [status.nasa.ok ? null : "NASA's ROSES blog", status.gg.ok ? null : "NASA on Grants.gov", status.nsf.ok ? null : "NSF on Grants.gov"].filter(Boolean);
+    if (!anyOk) toast("Couldn't reach NASA or Grants.gov from this browser. Check your connection and try again.");
+    else toast("Checked NASA and NSF: " + (n ? n + " to review." : "nothing new to review.") + (missed.length ? " Couldn't read " + missed.join(" or ") + " this time." : ""), missed.length ? 7000 : 0);
   }
 
   function matchOpp(it) {
     for (const [id, o] of S.opps) {
+      if (agencyOf(o) !== (it.agency || "NASA")) continue;
       const el = String(o.element || "");
       if (it.code && it.roses && el.includes(it.roses) && new RegExp("(^|\\s)" + escRe(it.code) + "(?![\\w.])").test(el)) return id;
-      if (it.number && o.sid && String(o.sid) === it.number) return id;
+      if (it.number && o.sid && sidKey(o.sid) === sidKey(it.number)) return id;
       const ab = String(o.abbr || "");
       if (ab.length >= 3 && new RegExp("(^|[^\\w-])" + escRe(ab) + "(?![\\w-])").test(it.title)) return id;
     }
@@ -670,11 +819,11 @@
     $("#st-review-wrap").hidden = nRev === 0;
     setStat("st-review", nRev);
     const parts = [];
-    if (S.checking) parts.push("Checking NASA now");
+    if (S.checking) parts.push("Checking NASA and NSF");
     else if (ready) {
       const checkedOn = parseDay(E() ? maxStr(BASE.checkedOn, CH.meta.checkedOn) : BASE.checkedOn);
       const year = todayLocal().getFullYear();
-      if (checkedOn) parts.push("Last NASA review " + fmtDay(checkedOn, checkedOn.getFullYear() !== year));
+      if (checkedOn) parts.push("Calls last checked " + fmtDay(checkedOn, checkedOn.getFullYear() !== year));
       const pub = new Date(BASE.savedAt || "");
       if (!isNaN(pub)) parts.push("published " + fmtDay(pub, pub.getFullYear() !== year));
     }
@@ -683,7 +832,7 @@
     el.classList.toggle("live", S.checking);
     const btn = $("#checkNowBtn");
     btn.disabled = S.checking || !ready;
-    btn.textContent = S.checking ? "Checking\u2026" : "Check NASA now";
+    btn.textContent = S.checking ? "Checking\u2026" : "Check for new calls";
     const eb = $("#editBtn");
     eb.disabled = !ready;
     eb.setAttribute("aria-pressed", String(S.editMode));
@@ -720,7 +869,11 @@
       const bits = [];
       if (c.opps) bits.push(plural(c.opps, "call", "calls"));
       if (c.caps) bits.push(plural(c.caps, "capability row", "capability rows"));
-      if (c.reviewed) bits.push(plural(c.reviewed, "NASA post reviewed", "NASA posts reviewed"));
+      if (c.reviewed) {
+        const posts = Object.keys(CH.reviewed).filter((k) => k.startsWith("wp:")).length;
+        if (posts) bits.push(plural(posts, "NASA post reviewed", "NASA posts reviewed"));
+        if (c.reviewed > posts) bits.push(plural(c.reviewed - posts, "listing reviewed", "listings reviewed"));
+      }
       if (c.settings) bits.push("the maintainer's name");
       p.textContent = "Changed in this browser only: " + bits.join(", ") + ". Nobody else sees " + (c.total === 1 ? "it" : "these") + " until " + (c.total === 1 ? "it's" : "they're") + " published." +
         (S.storageOk ? "" : " This browser won't keep " + (c.total === 1 ? "it" : "them") + " after you close the page.");
@@ -751,7 +904,25 @@
     }
     $("#n-opps").textContent = S.loaded ? String([...S.opps.values()].filter((o) => o.status !== "archived").length) : "";
     $("#n-caps").textContent = S.loaded ? String(S.caps.size) : "";
-    for (const b of document.querySelectorAll(".seg button")) b.setAttribute("aria-pressed", String(b.dataset.fit === S.fit));
+    for (const b of document.querySelectorAll("#fitSeg button")) b.setAttribute("aria-pressed", String(b.dataset.fit === S.fit));
+    renderAgencySeg();
+  }
+  // The agency filter appears once the board holds calls from more than one agency.
+  function renderAgencySeg() {
+    const seg = $("#agencySeg");
+    const present = new Set([...S.opps.values()].map(agencyOf));
+    const list = AGENCIES.filter((a) => present.has(a));
+    if (S.loaded && S.agency !== "all" && !list.includes(S.agency)) S.agency = "all";
+    seg.hidden = !S.loaded || list.length < 2;
+    const key = seg.hidden ? "" : list.join(",");
+    if (seg.dataset.list !== key) {
+      seg.dataset.list = key;
+      seg.replaceChildren(...(seg.hidden ? [] : ["all", ...list]).map((a) => h("button", {
+        type: "button", "data-agency": a,
+        onclick: () => { S.agency = a; savePrefs(); renderTabs(); renderOpps(); },
+      }, a === "all" ? "All funders" : AGENCY_LABEL[a])));
+    }
+    for (const b of seg.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.agency === S.agency));
   }
   function setTab(t, focus) {
     if (!TABS.includes(t)) return;
@@ -775,7 +946,7 @@
     const note = str(BASE.checkNote, 600);
     const fresher = E() && CH.meta.checkedOn && CH.meta.checkedOn > String(BASE.checkedOn || "");
     const cd = parseDay(CH.meta.checkedOn);
-    $("#checkNote").textContent = fresher && cd ? "You last checked NASA on " + fmtDay(cd, true) + "; that goes into the next publish." + (note ? " The published board says: " + note : "") : note;
+    $("#checkNote").textContent = fresher && cd ? "You last checked for new calls on " + fmtDay(cd, true) + "; that goes into the next publish." + (note ? " The published board says: " + note : "") : note;
     $("#checkNote").hidden = !$("#checkNote").textContent;
     const pub = new Date(BASE.savedAt || "");
     $("#fileInfo").replaceChildren(
@@ -786,7 +957,7 @@
   // ---------- rendering: calls ----------
   let oppNodes = new Map();
   function haystack(o) {
-    return [o.abbr, o.element, o.title, o.division, o.sid, (o.brings || []).join(" "), o.bringsText, o.gaps, o.says, o.action, o.notes, STATUS[o.status], o.statusNote].join(" ").toLowerCase();
+    return [o.abbr, AGENCY_LABEL[agencyOf(o)], o.element, o.title, o.division, o.sid, (o.brings || []).join(" "), o.bringsText, o.gaps, o.says, o.action, o.notes, STATUS[o.status], o.statusNote].join(" ").toLowerCase();
   }
   const byDue = (x, y) => ((daysLeft(x) ?? 1e9) - (daysLeft(y) ?? 1e9)) || scoreOf(y) - scoreOf(x);
   const isPassed = (o) => OPEN.has(o.status) && (daysLeft(o) ?? 0) < 0;
@@ -812,11 +983,12 @@
     if (rl) out.push(rl);
     const all = [...S.opps].map(([id, o]) => Object.assign({ id }, o));
     if (!all.length) {
-      out.push(emptyBox("No calls on the board yet.", E() ? "Add the first one with Add a call, or press Check NASA now." : "Calls appear here once they're published."));
+      out.push(emptyBox("No calls on the board yet.", E() ? "Add the first one with Add a call, or press Check for new calls." : "Calls appear here once they're published."));
       return out;
     }
     const q = S.q.trim().toLowerCase();
-    const vis = all.filter((o) => (S.fit === "all" || fitOf(scoreOf(o)).toLowerCase() === S.fit) && (!q || haystack(o).includes(q)));
+    const vis = all.filter((o) => (S.fit === "all" || fitOf(scoreOf(o)).toLowerCase() === S.fit) &&
+      (S.agency === "all" || agencyOf(o) === S.agency) && (!q || haystack(o).includes(q)));
     const open = vis.filter((o) => OPEN.has(o.status) && !isPassed(o)).sort(byDue);
     const later = vis.filter((o) => LATER.has(o.status)).sort(byScore);
     const passed = vis.filter(isPassed).sort((x, y) => (daysLeft(y) ?? 0) - (daysLeft(x) ?? 0));
@@ -844,37 +1016,46 @@
   function reviewLane() {
     if (!S.review.checkedAt && !S.checking) return null;
     const items = reviewItems().sort((a, b) => String(b.stamp).localeCompare(String(a.stamp)));
-    const main = items.filter((it) => !it.letter || MAIN_LETTERS.has(it.letter));
-    const other = items.filter((it) => it.letter && !MAIN_LETTERS.has(it.letter));
+    const isMain = (it) => (it.source === "nsf" ? !!it.watched : !it.letter || MAIN_LETTERS.has(it.letter));
+    const main = items.filter(isMain);
+    const otherNasa = items.filter((it) => it.source !== "nsf" && !isMain(it));
+    const otherNsf = items.filter((it) => it.source === "nsf" && !isMain(it));
     const st = S.review.status || {};
     const when = S.checking ? "Checking now" : S.review.checkedAt ? "Checked from this browser " + fmtDay(new Date(S.review.checkedAt), false) + " at " + fmtTime(S.review.checkedAt) : "";
+    const line = (s, ok, bad) => (s ? h("span", { class: s.ok ? null : "bad", text: s.ok ? ok : s.msg + bad }) : null);
     const statusLine = h("div", { class: "src-status" },
-      st.nasa ? h("span", { class: st.nasa.ok ? null : "bad", text: st.nasa.ok ? "NASA's ROSES blog: read" : st.nasa.msg }) : null,
-      st.gg ? h("span", { class: st.gg.ok ? null : "bad", text: st.gg.ok ? "Grants.gov: read" : st.gg.msg + " The NASA blog still covers ROSES." }) : null);
-    let otherNode = null;
-    if (other.length) {
-      otherNode = h("details", { class: "sub-lane", open: S.otherOpen },
-        h("summary", null, h("span", { class: "sub-title", text: "Other divisions" }), h("span", { text: plural(other.length, "post", "posts") + " for Earth science, astrophysics or biological and physical sciences" })),
-        h("div", { class: "list" }, other.map(reviewCard)),
-        E() ? h("div", { class: "review-actions" }, h("button", { class: "btn ghost", type: "button", onclick: () => markReviewed(other) }, "Mark these reviewed")) : null);
-      otherNode.addEventListener("toggle", () => { S.otherOpen = otherNode.open; });
-    }
+      line(st.nasa, "NASA's ROSES blog: read", ""),
+      line(st.gg, "NASA on Grants.gov: read", " The NASA blog still covers ROSES."),
+      line(st.nsf, "NSF on Grants.gov: read", " NSF calls weren't checked."));
+    const subLane = (key, title, note, list) => {
+      const d = h("details", { class: "sub-lane", open: S[key] },
+        h("summary", null, h("span", { class: "sub-title", text: title }), h("span", { text: note })),
+        h("div", { class: "list" }, list.map(reviewCard)),
+        E() ? h("div", { class: "review-actions" }, h("button", { class: "btn ghost", type: "button", onclick: () => markReviewed(list) }, "Mark these reviewed")) : null);
+      d.addEventListener("toggle", () => { S[key] = d.open; });
+      return d;
+    };
+    const others = otherNasa.length + otherNsf.length;
     return h("section", { class: "lane review" },
       h("div", { class: "lane-head" }, h("h2", null, "To review", h("span", { class: "count", text: String(items.length) })), h("p", { class: "lane-note", text: when })),
       statusLine,
-      items.length && !E() ? h("p", { class: "view-hint", text: "These posts aren't on the board or reviewed yet. Choose Edit at the top to add the ones that fit and mark the rest reviewed." }) : null,
-      main.length ? h("div", { class: "list" }, main.map(reviewCard)) : h("p", { class: "quiet-line", text: other.length ? "Nothing new for heliophysics, planetary or cross-division calls." : (S.checking ? "Reading NASA\u2026" : "Nothing new since the last review.") }),
-      otherNode,
+      items.length && !E() ? h("p", { class: "view-hint", text: "These aren't on the board or reviewed yet. Choose Edit at the top to add the ones that fit and mark the rest reviewed." }) : null,
+      main.length ? h("div", { class: "list" }, main.map(reviewCard)) : h("p", { class: "quiet-line", text: others ? "Nothing new for heliophysics, planetary or cross-division NASA calls, or the NSF programs the board watches." : (S.checking ? "Reading NASA and Grants.gov\u2026" : "Nothing new since the last review.") }),
+      otherNasa.length ? subLane("otherOpen", "Other NASA divisions", plural(otherNasa.length, "post", "posts") + " for Earth science, astrophysics or biological and physical sciences", otherNasa) : null,
+      otherNsf.length ? subLane("nsfOtherOpen", "Other NSF listings", plural(otherNsf.length, "new listing", "new listings") + " outside the NSF programs the board watches", otherNsf) : null,
       E() && main.length > 1 ? h("div", { class: "review-actions" }, h("button", { class: "btn ghost", type: "button", onclick: () => markReviewed(main) }, "Mark all reviewed")) : null);
   }
   function reviewCard(it) {
     const o = it.match ? S.opps.get(it.match) : null;
     const d = parseDay(String(it.date || "").slice(0, 10));
+    const nsf = it.source === "nsf";
     const meta = [
-      d ? fmtDay(d, true) : "",
+      d ? (nsf ? "Listed since " : "") + fmtDay(d, true) : "",
+      nsf && it.forecast ? "Forecast" : "",
       it.updated ? "Changed since it was reviewed" : "",
-      o ? "On the board as " + (o.abbr || o.title) : (it.letter ? LETTER_DIV[it.letter] : ""),
+      o ? "On the board as " + (o.abbr || o.title) : nsf ? it.division : (it.letter ? LETTER_DIV[it.letter] : ""),
     ].filter(Boolean).join(" \u00B7 ");
+    const also = nsf ? (it.nsfLink ? { label: "Grants.gov listing", url: it.link } : null) : it.also;
     const detail = it.sentences && it.sentences.length
       ? h("ul", { class: "rv-sent" }, it.sentences.map((s) => h("li", { text: s })))
       : (it.excerpt ? h("p", { class: "rv-sent", text: it.excerpt + (it.excerpt.length >= 260 ? "\u2026" : "") }) : null);
@@ -882,33 +1063,51 @@
     if (o) actions.push(h("button", { class: "btn", type: "button", onclick: () => gotoOpp(it.match) }, "Show " + (o.abbr || "call")));
     else if (E()) actions.push(h("button", { class: "btn", type: "button", onclick: () => openAdd(prefillFrom(it)) }, "Add to board"));
     if (E()) actions.push(h("button", { class: "btn ghost", type: "button", onclick: () => markReviewed([it]) }, "Mark reviewed"));
-    return h("article", { class: "rv" },
-      h("div", { class: "sign" }, h("span", { class: "abbr", text: it.code || (it.source === "gg" ? "Listing" : "Notice") }), h("span", { class: "element", text: [it.roses, it.source === "gg" ? "Grants.gov" : "NASA blog"].filter(Boolean).join(" \u00B7 ") })),
+    const signTop = nsf ? it.abbr || "Listing" : it.code || (it.source === "gg" ? "Listing" : "Notice");
+    const signSub = nsf ? "NSF " + it.number : [it.roses, it.source === "gg" ? "Grants.gov" : "NASA blog"].filter(Boolean).join(" \u00B7 ");
+    return h("article", { class: "rv", "data-key": it.key },
+      h("div", { class: "sign" }, h("span", { class: "abbr", text: signTop }), h("span", { class: "element", text: signSub })),
       h("div", { class: "main" },
-        h("a", { class: "rv-title", href: safeUrl(it.link) || "#", target: "_blank", rel: "noopener noreferrer", text: it.title }),
+        h("a", { class: "rv-title", href: safeUrl(nsf && it.nsfLink ? it.nsfLink : it.link) || "#", target: "_blank", rel: "noopener noreferrer", text: it.title }),
         h("div", { class: "opp-meta", text: meta }),
         detail,
-        it.also && safeUrl(it.also.url) ? h("a", { class: "rv-also", href: it.also.url, target: "_blank", rel: "noopener noreferrer", text: it.also.label }) : null),
+        also && safeUrl(also.url) ? h("a", { class: "rv-also", href: also.url, target: "_blank", rel: "noopener noreferrer", text: also.label }) : null),
       actions.length ? h("div", { class: "rv-actions" }, actions) : null);
   }
   function prefillFrom(it) {
+    if (it.source === "nsf") {
+      const abbr = it.abbr || "";
+      const title = abbr ? String(it.title || "").replace(new RegExp("\\s*:?\\s*\\(" + escRe(abbr) + "\\)\\s*$"), "") : String(it.title || "");
+      return {
+        title: title.trim() || it.title, abbr, element: "NSF " + it.number, agency: "NSF", division: it.division || "Other", sid: "NSF " + it.number,
+        status: it.forecast ? "expected" : "open",
+        due: it.anytime ? "" : it.dueGuess || "",
+        dueLabel: it.anytime ? "Proposals accepted anytime" : it.dueGuess ? "Grants.gov close date; check the call for submission windows" : "",
+        source: it.nsfLink || it.link, sourceLabel: it.nsfLink ? "NSF solicitation" : "Grants.gov listing",
+        extraSources: it.nsfLink ? [{ label: "Grants.gov listing", url: it.link }] : [],
+        text: it.text || it.excerpt || "", reviewKey: it.key, reviewStamp: it.modified || it.stamp,
+      };
+    }
     let title = String(it.title || "")
       .replace(/^Amendment\s+\d+[A-Z]?\s*:\s*/i, "")
       .replace(/^(New Opportunity|Corrections? to|Correction)\s*:?\s*/i, "")
       .replace(/^ROSES[-\s]?\d{2,4}\s*:?\s*/i, "");
     if (it.code) title = title.replace(new RegExp("^" + escRe(it.code) + "\\s*:?\\s*"), "");
     return {
-      title: title.trim() || it.title, abbr: "", element: [it.roses, it.code].filter(Boolean).join(" "),
-      division: it.letter ? LETTER_DIV[it.letter] : "Heliophysics", status: "open",
+      title: title.trim() || it.title, abbr: "", element: [it.roses, it.code].filter(Boolean).join(" "), agency: "NASA",
+      division: it.letter ? LETTER_DIV[it.letter] : "Heliophysics", status: "open", sid: it.source === "gg" ? it.number : "",
       due: it.dueGuess || "", dueLabel: it.sentences && it.sentences[0] ? it.sentences[0].slice(0, 200) : "",
       source: it.link, text: it.text || it.excerpt || "", reviewKey: it.key, reviewStamp: it.modified || it.stamp,
     };
   }
 
+  // NSF's core programs take proposals anytime: no deadline, and nothing for a calendar.
+  const isAnytime = (o) => !parseDay(o.due) && /accepted any ?time/i.test(String(o.dueLabel || ""));
   function whenBlock(o) {
     const dl = daysLeft(o);
     if (dl === null) {
       const later = LATER.has(o.status);
+      if (!later && isAnytime(o)) return h("div", { class: "when" }, h("span", { class: "tminus quiet", text: "Anytime" }), h("span", { class: "date", text: "No deadline" }));
       return h("div", { class: "when" },
         h("span", { class: "tminus quiet", text: later ? "TBD" : "Open" }),
         h("span", { class: "date", text: o.status === "unknown" ? "Timing unknown" : later ? "Not yet released" : "No fixed date" }));
@@ -939,6 +1138,7 @@
     S.q = "";
     $("#oppSearch").value = "";
     S.fit = "all";
+    S.agency = "all";
     const o = S.opps.get(id);
     if (o && o.status === "archived") S.archOpen = true;
     if (o && isPassed(o)) S.passedOpen = true;
@@ -968,7 +1168,7 @@
           isNew(o) ? h("span", { class: "pill new", text: "New" }) : null,
           o.status === "step2" ? h("span", { class: "pill", text: "Step-2 only" }) : null,
           CH.opps[o.id] ? h("span", { class: "pill mine", title: "Changed in this browser and not yet published", text: "Changed here" }) : null),
-        h("div", { class: "opp-meta", text: [o.division, o.statusNote].filter(Boolean).join(" \u00B7 ") }),
+        h("div", { class: "opp-meta", text: [AGENCY_LABEL[agencyOf(o)], agencyOf(o) === "Other" && o.division === "Other" ? null : o.division, o.statusNote].filter(Boolean).join(" \u00B7 ") }),
         (o.brings && o.brings.length) ? h("div", { class: "chips" }, o.brings.map(chip)) : null),
       whenBlock(o),
       h("div", { class: "fitbox" }, h("span", { class: "fit " + fit.toLowerCase(), text: fit }), h("span", { class: "score", text: s + " / 8" })));
@@ -994,7 +1194,7 @@
         })) : null,
         h("p", { text: o.bringsText || (ids.length ? "" : "Nothing matched yet.") }))),
       fact("Gaps and partners", o.gaps || "None noted."),
-      o.says ? factNode("What NASA asks for", h("p", { class: "says", text: "\u201C" + o.says + "\u201D" })) : null,
+      o.says ? factNode("What the call asks for", h("p", { class: "says", text: "\u201C" + o.says + "\u201D" })) : null,
       fact("Next action", o.action || "None set."),
       o.notes ? fact("Notes", o.notes) : null,
       sources.length ? factNode("Sources", h("div", { class: "sources" }, sources.map((x) => h("a", { href: safeUrl(x.url), target: "_blank", rel: "noopener noreferrer", text: x.label || x.url })))) : null,
@@ -1175,21 +1375,27 @@
 
   function oppForm(o) {
     const F = fieldsFor("of-" + o.id);
-    const divisions = DIVISIONS.includes(o.division) || !o.division ? DIVISIONS : [o.division, ...DIVISIONS];
+    const agency = agencyOf(o);
+    const own = divisionsFor(agency);
+    const divisions = own.includes(o.division) || !o.division ? own : [o.division, ...own];
+    const agencySel = F.select("agency", AGENCIES, agency, AGENCY_LABEL);
+    const divisionSel = F.select("division", divisions, o.division || own[0]);
+    agencySel.addEventListener("change", () => fillDivisions(divisionSel, agencySel.value));
     const form = h("form", { class: "form opp-form", novalidate: true },
       field("Short name", F.input("abbr", o.abbr, { maxlength: 24 }), "e.g. SSF"),
-      field("Element or call number", F.input("element", o.element, { maxlength: 60 }), "e.g. ROSES-25 B.8"),
+      field("Element or call number", F.input("element", o.element, { maxlength: 60 }), "e.g. ROSES-25 B.8 or NSF 26-516"),
       field("Call name", F.input("title", o.title, { maxlength: 200 }), null, true),
-      field("Division", F.select("division", divisions, o.division || "Heliophysics")),
+      field("Funder", agencySel),
+      field("Division", divisionSel),
       field("Solicitation ID", F.input("sid", o.sid, { maxlength: 80 })),
       field("Status", F.select("status", Object.keys(STATUS), o.status || "expected", STATUS)),
       field("Status note", F.input("statusNote", o.statusNote, { maxlength: 120 }), "e.g. Added Oct 8, 2026"),
       field("Next deadline", F.input("due", o.due, { type: "date" })),
-      field("What's due", F.input("dueLabel", o.dueLabel, { maxlength: 200 }), "e.g. Step-1 proposal"),
+      field("What's due", F.input("dueLabel", o.dueLabel, { maxlength: 200 }), "e.g. Step-1 proposal, or Proposals accepted anytime"),
       field("Capability IDs it uses", F.input("brings", (o.brings || []).join(", "), { maxlength: 200 }), "Comma-separated, e.g. C1, C8", true),
       field("What PSPL brings", F.area("bringsText", o.bringsText, 3), null, true),
       field("Gaps and partners", F.area("gaps", o.gaps, 3), null, true),
-      field("What NASA asks for", F.input("says", o.says, { maxlength: 200 }), "A short quote from the call", true),
+      field("What the call asks for", F.input("says", o.says, { maxlength: 200 }), "A short quote from the call", true),
       field("Next action", F.area("action", o.action, 2), null, true),
       field("Notes", F.area("notes", o.notes, 3), null, true),
       field("Sources", F.area("sources", (o.sources || []).map((x) => (x.label ? x.label + " | " : "") + x.url).join("\n"), 3), "One per line: label | link", true),
@@ -1221,7 +1427,8 @@
     const g = (k, n) => str(fd.get(k), n || 2000);
     const base = S.opps.get(id) || {};
     const data = Object.assign({}, base, {
-      abbr: g("abbr", 24), element: g("element", 60), title: g("title", 200), division: g("division", 40), sid: g("sid", 80),
+      abbr: g("abbr", 24), agency: AGENCIES.includes(g("agency")) ? g("agency") : "NASA",
+      element: g("element", 60), title: g("title", 200), division: g("division", 40), sid: g("sid", 80),
       status: STATUS[g("status")] ? g("status") : "expected", statusNote: g("statusNote", 120),
       due: parseDay(fd.get("due")) ? String(fd.get("due")) : null, dueLabel: g("dueLabel", 200),
       brings: parseIds(fd.get("brings")), bringsText: g("bringsText", 800), gaps: g("gaps", 800), says: g("says", 200),
@@ -1250,24 +1457,30 @@
   const RUBRIC = [
     "alignment 0-3: how directly the call's science or technology goals match PSPL's capabilities (3 core strength, 2 solid partial match, 1 tangential, 0 unrelated).",
     "readiness 0-3: whether PSPL could write a competitive proposal with what the register shows today (3 ready now, 2 needs modest work, 1 needs major new work or partners, 0 not credible yet).",
-    "timing 0-2: 0 if the next deadline is under about 3 weeks away or new proposers can no longer enter; 1 if about 3-6 weeks away or unknown; 2 if months away or not yet released.",
+    "timing 0-2: 0 if the next deadline is under about 3 weeks away or new proposers can no longer enter; 1 if about 3-6 weeks away or unknown; 2 if months away, not yet released, or proposals are accepted anytime.",
   ].join("\n");
-  const INTRO = "You are scoring one NASA solicitation for the Princeton Space Physics Laboratory (PSPL), a university lab that builds, calibrates and flies space-plasma instruments and analyzes heliophysics and dust data.";
-  const SHAPE = '{"alignment":2,"readiness":1,"timing":2,"brings":["C1","C8"],"bringsText":"1-2 sentences on what PSPL brings","gaps":"1-2 sentences on what is missing and what kind of partner fills it; cite GAP ids when one applies","says":"verbatim quote of at most 15 words from the call text stating what NASA asks for, or an empty string","action":"one concrete next step for PSPL","notes":"eligibility limits, review format or anything to check, or an empty string"}';
+  const INTRO = "You are scoring one funding opportunity for the Princeton Space Physics Laboratory (PSPL), a university lab that builds, calibrates and flies space-plasma instruments and analyzes heliophysics and dust data.";
+  const AGENCY_NOTE = {
+    NSF: "This is an NSF call. NSF reviews every proposal on Intellectual Merit and Broader Impacts, and some NSF programs send proposals that mainly use NASA data or missions to NASA. Some NSF programs limit who may lead a proposal (CAREER, for example, is for untenured assistant professors); put any such limit in notes.",
+  };
+  const SHAPE = '{"alignment":2,"readiness":1,"timing":2,"brings":["C1","C8"],"bringsText":"1-2 sentences on what PSPL brings","gaps":"1-2 sentences on what is missing and what kind of partner fills it; cite GAP ids when one applies","says":"verbatim quote of at most 15 words from the call text stating what the call asks for, or an empty string","action":"one concrete next step for PSPL","notes":"eligibility limits, review format or anything to check, or an empty string"}';
   function promptFor(info, intro) {
     const dl = info.due ? Math.round((parseDay(info.due) - todayLocal()) / 864e5) : null;
+    const agency = agencyOf(info);
     return [
       INTRO, intro || "", "", "Today is " + isoDay(todayLocal()) + ".", "",
       "PSPL CAPABILITY REGISTER (CAP = capability PSPL has; GAP = known gap PSPL would need a partner for). Fields: id | type | category | capability | evidence | maturity",
       registerText(), "",
       "THE CALL",
+      "Funder: " + AGENCY_LABEL[agency],
       "Name: " + (info.title || ""),
       "Short name / element: " + [info.abbr, info.element].filter(Boolean).join(" "),
       "Division: " + (info.division || "not given"),
       "Status: " + (STATUS[info.status] || "not given") + (info.statusNote ? " (" + info.statusNote + ")" : ""),
-      "Next deadline: " + (info.due ? info.due + " (" + dl + " days from today)" : "not set"),
+      "Next deadline: " + (info.due ? info.due + " (" + dl + " days from today)" : isAnytime(info) ? "none: proposals accepted anytime" : "not set"),
       "What's due: " + (info.dueLabel || "not given"),
-      info.says ? "What NASA asks for: " + info.says : "",
+      AGENCY_NOTE[agency] || "",
+      info.says ? "What the call asks for: " + info.says : "",
       info.gaps ? "Earlier gaps note: " + info.gaps : "",
       info.notes ? "Earlier notes: " + info.notes : "",
       info.text ? "Call text:\n<<<\n" + info.text + "\n>>>" : "",
@@ -1337,10 +1550,18 @@
   }
 
   // ---------- add a call ----------
+  function emptyAdd() { return { reviewKey: null, reviewStamp: null, result: null, sourceUrl: "", sourceLabel: "", extraSources: [] }; }
+  function fillDivisions(sel, agency, value) {
+    const own = divisionsFor(agency);
+    const list = value && !own.includes(value) ? [value, ...own] : own;
+    sel.replaceChildren(...list.map((d) => h("option", { value: d }, d)));
+    sel.value = list.includes(value) ? value : list[0];
+  }
   function readAddForm() {
     const v = (id) => document.getElementById(id).value || "";
     return {
-      title: str(v("a-title"), 200), abbr: str(v("a-abbr"), 24), element: str(v("a-element"), 60), division: v("a-division"),
+      title: str(v("a-title"), 200), abbr: str(v("a-abbr"), 24), element: str(v("a-element"), 60),
+      agency: AGENCIES.includes(v("a-agency")) ? v("a-agency") : "NASA", division: v("a-division"), sid: str(v("a-sid"), 80),
       status: STATUS[v("a-status")] ? v("a-status") : "expected", due: parseDay(v("a-due")) ? v("a-due") : null,
       dueLabel: str(v("a-duelabel"), 200), source: str(v("a-source"), 600), text: v("a-text").trim().slice(0, 30000),
     };
@@ -1354,22 +1575,27 @@
     $("#a-aimsg").textContent = "";
     $("#a-copied").textContent = "";
     $("#aiBox").hidden = true;
-    S.add = { reviewKey: null, reviewStamp: null, result: null };
+    S.add = emptyAdd();
+    const agency = prefill && AGENCIES.includes(prefill.agency) ? prefill.agency : "NASA";
+    $("#a-agency").value = agency;
+    fillDivisions($("#a-division"), agency, prefill && divisionsFor(agency).includes(prefill.division) ? prefill.division : null);
     if (prefill) {
       const set = (id, val) => { if (val != null) document.getElementById(id).value = val; };
-      set("a-title", prefill.title); set("a-abbr", prefill.abbr); set("a-element", prefill.element);
-      if (DIVISIONS.includes(prefill.division)) set("a-division", prefill.division);
+      set("a-title", prefill.title); set("a-abbr", prefill.abbr); set("a-element", prefill.element); set("a-sid", prefill.sid);
       set("a-status", prefill.status); set("a-due", prefill.due || ""); set("a-duelabel", prefill.dueLabel);
       set("a-source", prefill.source); set("a-text", prefill.text);
       S.add.reviewKey = prefill.reviewKey || null;
       S.add.reviewStamp = prefill.reviewStamp || null;
+      S.add.sourceUrl = prefill.source || "";
+      S.add.sourceLabel = prefill.sourceLabel || "";
+      S.add.extraSources = Array.isArray(prefill.extraSources) ? prefill.extraSources : [];
     }
     renderAddResult();
     $("#addPanel").hidden = false;
     $("#addPanel").scrollIntoView({ block: "start", behavior: "smooth" });
     requestAnimationFrame(() => $("#a-title").focus({ preventScroll: true }));
   }
-  function closeAdd() { $("#addPanel").hidden = true; S.add = { reviewKey: null, reviewStamp: null, result: null }; }
+  function closeAdd() { $("#addPanel").hidden = true; S.add = emptyAdd(); }
   function showAiBox() {
     const info = readAddForm();
     if (!info.title) { toast("Give the call a name first."); $("#a-title").focus(); return; }
@@ -1413,7 +1639,7 @@
           r.brings.length ? h("div", { class: "brings-list" }, r.brings.map((cid) => { const c = S.caps.get(cid); return h("span", { class: "capref" }, h("b", { text: cid }), c ? c.name : ""); })) : null,
           h("p", { text: r.bringsText || "Nothing in the register matched." }))),
         fact("Gaps and partners", r.gaps || "None noted."),
-        r.says ? factNode("What NASA asks for", h("p", { class: "says", text: "\u201C" + r.says + "\u201D" })) : null,
+        r.says ? factNode("What the call asks for", h("p", { class: "says", text: "\u201C" + r.says + "\u201D" })) : null,
         fact("Next action", r.action || "None suggested."),
         r.notes ? fact("Notes", r.notes) : null),
       h("div", { class: "side" },
@@ -1434,13 +1660,18 @@
     const now = nowIso();
     const initials = info.title.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && w.length > 2).map((w) => w[0].toUpperCase()).join("").slice(0, 6);
     const id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const sources = safeUrl(info.source) ? [{ label: (info.source === S.add.sourceUrl && S.add.sourceLabel) || "Call page", url: info.source }] : [];
+    for (const x of S.add.extraSources || []) {
+      if (x && safeUrl(x.url) && !sources.some((s) => s.url === x.url)) sources.push({ label: str(x.label, 120) || shortUrl(x.url), url: x.url });
+    }
     const data = {
-      abbr: info.abbr || initials || "Call", element: info.element, title: info.title, division: info.division, sid: "",
+      abbr: info.abbr || initials || "Call", agency: info.agency, element: info.element, title: info.title, division: info.division, sid: info.sid,
       status: info.status, statusNote: "Added " + fmtDay(todayLocal(), true), due: info.due, dueLabel: info.dueLabel,
+      // Timing: 0 under about three weeks, 1 within about six, otherwise 2; no deadline (not set, or accepted anytime) counts as 2.
       a: r ? r.a : 1, r: r ? r.r : 1, t: r ? r.t : (dl == null ? 2 : dl <= 21 ? 0 : dl <= 45 ? 1 : 2),
       brings: r ? r.brings : [], bringsText: r ? r.bringsText : "", gaps: r ? r.gaps : "", says: r ? r.says : "",
       action: r ? r.action : "", notes: r ? r.notes : "",
-      sources: safeUrl(info.source) ? [{ label: "Call page", url: info.source }] : [],
+      sources,
       flag: "new", origin: r ? "ai" : "manual", createdAt: now,
     };
     if (S.add.reviewKey) CH.reviewed[S.add.reviewKey] = S.add.reviewStamp || now;
@@ -1600,11 +1831,11 @@
     if (!S.loaded) return;
     let rows;
     if (kind === "opps") {
-      rows = [["Short name", "Element", "Call", "Division", "Solicitation ID", "Status", "Status note", "Next deadline", "What's due", "Days left", "Alignment", "Readiness", "Timing", "Score", "Fit", "Capability IDs", "What PSPL brings", "Gaps and partners", "What NASA asks for", "Next action", "Notes", "Sources"]];
+      rows = [["Short name", "Funder", "Element", "Call", "Division", "Solicitation ID", "Status", "Status note", "Next deadline", "What's due", "Days left", "Alignment", "Readiness", "Timing", "Score", "Fit", "Capability IDs", "What PSPL brings", "Gaps and partners", "What the call asks for", "Next action", "Notes", "Sources"]];
       const list = [...S.opps.values()].sort((x, y) => (OPEN.has(y.status) - OPEN.has(x.status)) || byScore(x, y));
       for (const o of list) {
         const s = scoreOf(o);
-        rows.push([o.abbr, o.element, o.title, o.division, o.sid, STATUS[o.status] || o.status, o.statusNote, o.due || "", o.dueLabel, daysLeft(o) ?? "", clampInt(o.a, 3), clampInt(o.r, 3), clampInt(o.t, 2), s, fitOf(s), (o.brings || []).join(" "), o.bringsText, o.gaps, o.says, o.action, o.notes, (o.sources || []).map((x) => x.url).join(" ")]);
+        rows.push([o.abbr, AGENCY_LABEL[agencyOf(o)], o.element, o.title, o.division, o.sid, STATUS[o.status] || o.status, o.statusNote, o.due || "", o.dueLabel, daysLeft(o) ?? "", clampInt(o.a, 3), clampInt(o.r, 3), clampInt(o.t, 2), s, fitOf(s), (o.brings || []).join(" "), o.bringsText, o.gaps, o.says, o.action, o.notes, (o.sources || []).map((x) => x.url).join(" ")]);
       }
     } else {
       rows = [["ID", "Type", "Category", "Capability", "Evidence", "Maturity", "Source", "Source link", "Contact", "Confirmed"]];
@@ -1632,19 +1863,21 @@
       : "Edit mode is off." + (changeCounts().total ? " Your unpublished changes are still listed in the gold band." : ""));
   }
   function bindStatic() {
-    $("#a-division").replaceChildren(...DIVISIONS.map((d) => h("option", { value: d, selected: d === "Heliophysics" }, d)));
+    $("#a-agency").replaceChildren(...AGENCIES.map((a) => h("option", { value: a }, AGENCY_LABEL[a])));
+    fillDivisions($("#a-division"), "NASA");
+    $("#a-agency").addEventListener("change", () => fillDivisions($("#a-division"), $("#a-agency").value));
     for (const t of TABS) document.getElementById("tab-" + t).addEventListener("click", () => setTab(t));
     $(".tabs [role=tablist]").addEventListener("keydown", (e) => {
       if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
       const i = TABS.indexOf(S.tab);
       setTab(TABS[(i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length], true);
     });
-    for (const b of document.querySelectorAll(".seg button")) {
+    for (const b of document.querySelectorAll("#fitSeg button")) {
       b.addEventListener("click", () => { S.fit = b.dataset.fit; savePrefs(); renderTabs(); renderOpps(); });
     }
     $("#oppSearch").addEventListener("input", (e) => { S.q = e.target.value; renderOpps(); });
     $("#capSearch").addEventListener("input", (e) => { S.capQ = e.target.value; renderCaps(); });
-    $("#checkNowBtn").addEventListener("click", checkNasa);
+    $("#checkNowBtn").addEventListener("click", checkCalls);
     $("#addCallBtn").addEventListener("click", () => openAdd(null));
     $("#addClose").addEventListener("click", closeAdd);
     $("#addForm").addEventListener("submit", (e) => { e.preventDefault(); saveNewCall(); });
