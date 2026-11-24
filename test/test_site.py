@@ -10,7 +10,9 @@ downloaded copies, a broken board.json and phone width. Pages run on a fixed dat
 unless a test sets its own, so the board's deadlines don't age the tests. Screenshots go to
 test/output/.
 """
+import csv
 import functools
+import io
 import json
 import shutil
 import sys
@@ -364,7 +366,9 @@ with sync_playwright() as p:
     pg.click("#cf-" + ROW_B)
     pg.click("#publishBtn")
     pg.wait_for_selector("#publishPanel:not([hidden])")
-    check(pg.is_visible("#publishSteps") and "couldn't be read" not in pg.inner_text("#publishSummary"), "publish still works from the site's copy when GitHub's API refuses")
+    fallback = pg.inner_text("#publishSummary")
+    check(pg.is_visible("#publishSteps") and "couldn't be read" not in fallback, "publish still works from the site's copy when GitHub's API refuses")
+    check("GitHub didn't answer just now" in fallback and "wait a few minutes and publish again" in fallback, "and warns that the site's copy can trail a new commit (#14)")
     pg.click("#publishClose")
     pg.route(BASE + "board.json**", lambda r: r.fulfill(status=500, body="down"))
     pg.click("#publishBtn")
@@ -373,6 +377,33 @@ with sync_playwright() as p:
     pg.unroute(BASE + "board.json**")
     api["mode"] = "serve"
     pg.click("#publishClose")
+
+    # 5b. Two tabs of the board in one browser: a change saved in one isn't lost when the other saves.
+    tabs = new_ctx()
+    tb1 = open_page(tabs, tag="tab 1")
+    loaded(tb1)
+    tb2 = open_page(tabs, tag="tab 2")
+    loaded(tb2)
+    for t in (tb1, tb2):
+        t.click("#editBtn")
+        t.click("#tab-capabilities")
+    def shows(t, text, ms=5000):
+        try:
+            t.wait_for_function("(s) => { const el = document.querySelector('#changesText'); return !!el && el.textContent.includes(s); }", arg=text, timeout=ms)
+            return True
+        except Exception:
+            return False
+    # Rows the published board hasn't touched: the pages run on a fixed clock, so a row published at
+    # FIXED_NOW and changed again at FIXED_NOW would look already published.
+    row_c = UNCONFIRMED[2]
+    tb1.click("#cf-" + ROW_B)
+    check(shows(tb2, "1 capability row"), "another open tab picks up a change as soon as it's saved")
+    tb2.click("#cf-" + row_c)
+    shows(tb1, "2 capability rows")
+    tb1.reload()
+    loaded(tb1)
+    check("2 capability rows" in band(tb1), "a change made in one tab survives a change made in another tab")
+    tabs.close()
 
     # 6. Copying is blocked: the text is shown selected instead.
     pg.evaluate("() => { navigator.clipboard.writeText = () => Promise.reject(new Error('blocked')); }")
@@ -537,6 +568,25 @@ with sync_playwright() as p:
     bad2 = json.loads(SEED_TEXT)
     bad2["nsf"] = {"floor": "soon", "reviewed": {"nsf:26-516": 5}}
     check(len(check_board.check(bad2)[0]) == 2, "the checker checks the nsf block")
+
+    # 8a5. CSV cells that start like a spreadsheet formula are kept as text; numbers stay numbers.
+    risky = json.loads(before)
+    rk = "r25-b8-ssf"
+    risky["opps"][rk].update({"notes": '=HYPERLINK("https://example.com","open")', "action": "-check eligibility", "says": "@all", "due": "2026-10-01"})
+    set_board(check_board.canonical(risky))
+    cctx = new_ctx()
+    pcsv = open_page(cctx, tag="csv")
+    loaded(pcsv)
+    with pcsv.expect_download() as dl:
+        pcsv.click("#exportOpps")
+    rows_csv = list(csv.reader(io.StringIO(Path(dl.value.path()).read_text(encoding="utf-8-sig"))))
+    hdr = rows_csv[0]
+    row = next(r for r in rows_csv[1:] if r[hdr.index("Solicitation ID")] == risky["opps"][rk]["sid"])
+    check(row[hdr.index("Notes")] == "'" + risky["opps"][rk]["notes"] and row[hdr.index("Next action")] == "'-check eligibility" and row[hdr.index("What the call asks for")] == "'@all",
+          "CSV cells that start like a formula are kept as text")
+    check(row[hdr.index("Days left")] == "-24" and row[hdr.index("Score")].isdigit(), "and negative numbers stay numbers")
+    cctx.close()
+    set_board(before)
 
     # 8b. Links to a call, calendar files and the register's links.
     lk = new_ctx()
