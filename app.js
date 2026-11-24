@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "1.5.0";
+  const APP_VERSION = "1.5.1";
   const BOARD_ID = "pspl-proposer";
   const DEFAULT_SITE = "https://mitchellshen.github.io/pspl-proposer/";
   const DEFAULT_REPO = "https://github.com/mitchellshen/pspl-proposer";
@@ -289,9 +289,11 @@
   async function fetchLatest() {
     try {
       const board = normalizeBoard(await getJson(apiBoardUrl(), { headers: { Accept: "application/vnd.github.raw+json" } }));
-      if (board) return { board, fresh: true };
+      if (board) return { board, fresh: true, from: "github" };
     } catch (e) { /* fall back to the site's copy */ }
-    try { return { board: (await fetchBoard()).board, fresh: true }; } catch (e) { return { board: BASE, fresh: false }; }
+    // The site's copy is the next best, but it can trail a new commit by a few minutes, so it
+    // doesn't count as the latest: the publish panel says so (issue #14).
+    try { return { board: (await fetchBoard()).board, fresh: false, from: "site" }; } catch (e) { return { board: BASE, fresh: false, from: "loaded" }; }
   }
   function resetPublishUi() {
     const ta = $("#publishText");
@@ -304,7 +306,7 @@
     const btn = $("#publishBtn");
     btn.disabled = true;
     btn.textContent = "Preparing…";
-    const { board: base, fresh } = await fetchLatest();
+    const { board: base, fresh, from } = await fetchLatest();
     btn.disabled = false;
     btn.textContent = "Publish changes";
     // A board written by a newer version of the page may hold fields this one doesn't know; publishing
@@ -354,7 +356,7 @@
       opps: sortedDocs(opps, OPP_FIELDS, byCode),
       caps: sortedDocs(caps, CAP_FIELDS, (a, b) => capKey(a) - capKey(b) || byCode(a, b)),
     };
-    S.publish = { json: JSON.stringify(data, null, 2) + "\n", older, applied, fresh, opps: Object.keys(opps).length, caps: Object.keys(caps).length };
+    S.publish = { json: JSON.stringify(data, null, 2) + "\n", older, applied, fresh, from, opps: Object.keys(opps).length, caps: Object.keys(caps).length };
     resetPublishUi();
     renderBand();
     requestAnimationFrame(() => { const b = $("#copyBoardBtn"); if (b && !$("#publishSteps").hidden) b.focus(); });
@@ -885,7 +887,9 @@
     if (!pub.applied) notes.push("Everything you changed here is already published, or older than the published version, so there's nothing new to publish. Discard your changes to clear this band.");
     else notes.push("The new board is ready: " + plural(pub.opps, "call", "calls") + " and " + plural(pub.caps, "capability row", "capability rows") + ", with your changes added to the latest published version.");
     if (pub.older) notes.push(plural(pub.older, "of your changes is", "of your changes are") + " older than what's already published, so the published version was kept.");
-    if (!pub.fresh) notes.push("The latest published board couldn't be read just now, so this builds on the copy you loaded earlier. If someone has published since then, reload and publish again so their changes aren't lost.");
+    if (!pub.fresh) notes.push(pub.from === "site"
+      ? "GitHub didn't answer just now, so this builds on the site's copy of the board, which can trail a new commit by a few minutes. If someone published in the last few minutes, wait a few minutes and publish again so their changes aren't lost."
+      : "The latest published board couldn't be read just now, so this builds on the copy you loaded earlier. If someone has published since then, reload and publish again so their changes aren't lost.");
     $("#publishSummary").textContent = notes.join(" ");
     $("#publishSteps").hidden = !pub.applied;
     $("#publishAlt").hidden = !pub.applied;
@@ -1825,7 +1829,13 @@
   }
 
   // ---------- CSV export ----------
-  const csvCell = (v) => { const s = String(v ?? ""); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  // A cell that starts like a formula (=, +, -, @) gets a leading apostrophe so a spreadsheet keeps it as
+  // text instead of running it; plain numbers, such as negative days left, stay numbers.
+  const csvCell = (v) => {
+    let s = String(v ?? "");
+    if (/^[=+\-@\t\r]/.test(s) && !/^[+-]?\d+(\.\d+)?$/.test(s)) s = "'" + s;
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
   const csv = (rows) => "\uFEFF" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
   function exportCsv(kind) {
     if (!S.loaded) return;
@@ -1892,6 +1902,15 @@
     $("#exportCaps").addEventListener("click", () => exportCsv("caps"));
     $("#exportIcs").addEventListener("click", exportIcs);
     window.addEventListener("hashchange", () => { if (S.loaded) openFromHash(); });
+    // Another tab of the board saved its unpublished changes. Take them up here, so this tab's next
+    // save doesn't overwrite them with its older copy.
+    window.addEventListener("storage", (e) => {
+      if (e.key !== K_CHANGES || !S.loaded || !S.storageOk) return;
+      CH = loadChanges();
+      S.publish = null;
+      rebuild();
+      renderAll();
+    });
     $("#publishBtn").addEventListener("click", publishChanges);
     $("#editBtn").addEventListener("click", () => { if (S.loaded) setEditMode(!S.editMode); });
     $("#publishClose").addEventListener("click", () => { S.publish = null; resetPublishUi(); renderBand(); $("#publishBtn").focus(); });

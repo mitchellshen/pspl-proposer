@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.1 (2026-11-24)
+
+Fixes from a safety review. Nothing else changes.
+
+- Publishing from the site's copy of the board, when GitHub's API doesn't answer, now says that this copy can trail a new commit by a few minutes, and to wait and publish again if someone just published (#14). Before, it was treated as the latest board without a word, so a second publish within those minutes could drop the first one's changes.
+- Two open tabs of the board in one browser no longer overwrite each other's unpublished changes: each tab takes up the other's saved changes as they happen. Before, a change saved in one tab was lost when the other tab saved.
+- The CSV exports keep cells that start like a spreadsheet formula (=, +, - or @) as text, with a leading apostrophe, so text from a call or an AI reply can't run as a formula in Excel. Numbers, such as negative days left, stay numbers.
+- Tests: 119 checks.
+
 ## 1.5.0 (2026-11-20)
 
 - NSF calls. **Check NASA now** is now **Check for new calls**: besides NASA's ROSES blog and NASA's Grants.gov listings, it reads NSF's listings on Grants.gov in one request. The NSF programs that fit the lab (GEO Core, MPS Astro, MPS Physics, MRI, Mid-scale Research Infrastructure, CAREER and the AGS postdoctoral fellowships), and listings whose titles name a lab topic, wait under To review with their funding and award sizes. Other new NSF listings fold under Other NSF listings.
